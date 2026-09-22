@@ -109,10 +109,7 @@ export default function MenuPage() {
             <p className="font-display text-2xl text-ember-400">
               La carta está vacía
             </p>
-            <p className="mt-2 text-sm">
-              Entra al panel de administración para agregar los primeros
-              platos.
-            </p>
+            
           </div>
         )}
 
@@ -163,11 +160,6 @@ export default function MenuPage() {
         ))}
       </div>
 
-      <footer className="mt-16 text-center text-xs text-char-600">
-        <a href="/admin" className="hover:text-smoke-300">
-          Panel de administración
-        </a>
-      </footer>
     </main>
   );
 }
