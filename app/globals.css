@@ -15,6 +15,27 @@ body {
   color: #f4ede1;
 }
 
+/* Textura sutil de grano + un resplandor de brasa fijo en la parte
+   superior, para que la página no se sienta como un vacío plano en
+   pantallas anchas. */
+body {
+  background-image:
+    radial-gradient(ellipse 900px 500px at 50% -10%, rgba(232, 114, 44, 0.16), transparent 60%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  background-attachment: fixed, fixed;
+  background-repeat: no-repeat, repeat;
+}
+
+.ember-rule {
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #c1391f, #f2a93b 45%, transparent);
+}
+
+.brand-glow {
+  box-shadow: 0 0 0 1px rgba(242, 169, 59, 0.15), 0 8px 24px -8px rgba(193, 57, 31, 0.45);
+}
+
 ::selection {
   background: #c1391f;
   color: #f4ede1;

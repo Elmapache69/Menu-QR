@@ -8,9 +8,36 @@ import {
   serverTimestamp,
   updateDoc,
 } from "firebase/firestore";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import { db, storage } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { CATEGORY_ORDER } from "@/lib/format";
+
+async function uploadToCloudinary(file) {
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
+  if (!cloudName || !uploadPreset) {
+    throw new Error(
+      "Falta configurar NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME / NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET"
+    );
+  }
+
+  const body = new FormData();
+  body.append("file", file);
+  body.append("upload_preset", uploadPreset);
+  body.append("folder", "menu-images");
+
+  const res = await fetch(
+    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+    { method: "POST", body }
+  );
+
+  if (!res.ok) {
+    throw new Error("Error subiendo la imagen a Cloudinary");
+  }
+
+  const data = await res.json();
+  return data.secure_url;
+}
 
 const emptyForm = { name: "", description: "", price: "", category: "" };
 
@@ -51,10 +78,7 @@ export default function AdminItemForm({
       let imageUrl = editingItem?.imageUrl || "";
 
       if (file) {
-        const path = `menu-images/${Date.now()}-${file.name}`;
-        const storageRef = ref(storage, path);
-        await uploadBytes(storageRef, file);
-        imageUrl = await getDownloadURL(storageRef);
+        imageUrl = await uploadToCloudinary(file);
       }
 
       const payload = {
