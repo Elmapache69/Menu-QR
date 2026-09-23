@@ -182,36 +182,33 @@ export default function MenuPage() {
               <div className="ember-rule h-[2px] flex-1 opacity-70" />
             </div>
 
-            <ul className="space-y-3">
+            <ul className="divide-y divide-char-800/80">
               {grouped[cat].map((item) => (
-                <li
-                  key={item.id}
-                  className="group flex items-start gap-4 rounded-xl border border-char-800 bg-char-900/60 p-3 transition-colors hover:border-ember-600/40"
-                >
-                  {item.imageUrl ? (
+                <li key={item.id} className="flex items-start gap-4 py-4">
+                  {item.imageUrl && (
                     <Image
                       src={item.imageUrl}
                       alt={item.name}
-                      width={76}
-                      height={76}
-                      className="h-[76px] w-[76px] flex-shrink-0 rounded-lg object-cover"
+                      width={80}
+                      height={80}
+                      className="h-20 w-20 flex-shrink-0 rounded-md object-cover"
                     />
-                  ) : (
-                    <div className="flex h-[76px] w-[76px] flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-char-800 to-char-900 ring-1 ring-inset ring-char-700">
-                      <FlameIcon className="h-7 w-7 text-ember-500/70" />
-                    </div>
                   )}
-                  <div className="flex-1 pt-0.5">
-                    <div className="flex items-baseline justify-between gap-3">
-                      <h3 className="font-medium text-smoke-100">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline gap-2">
+                      <h3 className="whitespace-nowrap font-medium text-smoke-100">
                         {item.name}
                       </h3>
+                      <span
+                        className="mb-1 flex-1 border-b border-dotted border-char-600"
+                        aria-hidden="true"
+                      />
                       <span className="whitespace-nowrap font-display text-lg tracking-wide text-ember-400">
                         {formatCLP(item.price)}
                       </span>
                     </div>
                     {item.description && (
-                      <p className="mt-1 text-sm leading-snug text-smoke-300">
+                      <p className="mt-1 text-sm italic leading-snug text-smoke-300">
                         {item.description}
                       </p>
                     )}
