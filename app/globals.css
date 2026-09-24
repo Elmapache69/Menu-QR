@@ -64,7 +64,7 @@ body {
   max-height: 560px;
   top: -12%;
   left: -15%;
-  background: radial-gradient(circle, rgba(170, 160, 150, 0.22), transparent 70%);
+  background: radial-gradient(circle, rgba(190, 180, 170, 0.4), transparent 70%);
   animation: smoke-drift-1 32s ease-in-out infinite;
 }
 
@@ -75,7 +75,7 @@ body {
   max-height: 620px;
   top: 25%;
   right: -20%;
-  background: radial-gradient(circle, rgba(130, 120, 112, 0.18), transparent 70%);
+  background: radial-gradient(circle, rgba(150, 140, 130, 0.34), transparent 70%);
   animation: smoke-drift-2 40s ease-in-out infinite;
 }
 
@@ -86,7 +86,7 @@ body {
   max-height: 480px;
   bottom: -15%;
   left: 15%;
-  background: radial-gradient(circle, rgba(150, 138, 128, 0.16), transparent 70%);
+  background: radial-gradient(circle, rgba(170, 158, 148, 0.3), transparent 70%);
   animation: smoke-drift-3 36s ease-in-out infinite;
 }
 
