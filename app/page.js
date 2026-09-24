@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { formatCLP, sortCategories } from "@/lib/format";
+import { formatCLP, sortCategories, categoryKicker } from "@/lib/format";
 import FlameIcon from "@/components/FlameIcon";
 import PromoCarousel from "@/components/PromoCarousel";
 
@@ -172,25 +172,36 @@ export default function MenuPage() {
             data-cat-section={cat}
             className="mt-12 scroll-mt-36"
           >
-            <div className="mb-5 flex items-center gap-3">
-              <FlameIcon className="h-5 w-5 flex-shrink-0 text-ember-500" />
-              <h2 className="font-display text-[1.7rem] leading-none tracking-wide text-smoke-100">
-                {cat}
-              </h2>
-              <div className="ember-rule h-[2px] flex-1 opacity-70" />
+            <div className="mb-5">
+              {categoryKicker(cat) && (
+                <p className="mb-1 pl-7 text-[11px] font-medium uppercase tracking-[0.15em] text-ember-500/80">
+                  {categoryKicker(cat)}
+                </p>
+              )}
+              <div className="flex items-center gap-3">
+                <FlameIcon className="h-5 w-5 flex-shrink-0 text-ember-500" />
+                <h2 className="font-display text-[1.7rem] leading-none tracking-wide text-smoke-100">
+                  {cat}
+                </h2>
+                <div className="ember-rule h-[2px] flex-1 opacity-70" />
+              </div>
             </div>
 
             <ul className="divide-y divide-char-800/80">
               {grouped[cat].map((item) => (
                 <li key={item.id} className="flex items-start gap-3 py-4 sm:gap-4">
                   {item.imageUrl && (
-                    <Image
-                      src={item.imageUrl}
-                      alt={item.name}
-                      width={80}
-                      height={80}
-                      className="h-16 w-16 flex-shrink-0 rounded-md object-cover sm:h-20 sm:w-20"
-                    />
+                    <div className="group relative flex-shrink-0 overflow-hidden rounded-lg">
+                      <Image
+                        src={item.imageUrl}
+                        alt={item.name}
+                        width={96}
+                        height={96}
+                        className="h-20 w-20 rounded-lg object-cover transition-transform duration-300 ease-out active:scale-105 sm:h-24 sm:w-24 sm:group-hover:scale-105"
+                      />
+                      <div className="pointer-events-none absolute inset-0 rounded-lg ring-1 ring-inset ring-black/20" />
+                      <div className="pointer-events-none absolute inset-0 rounded-lg bg-gradient-to-t from-ember-700/10 to-transparent" />
+                    </div>
                   )}
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-baseline gap-x-2">
@@ -201,12 +212,12 @@ export default function MenuPage() {
                         className="mb-1 hidden min-w-[16px] flex-1 border-b border-dotted border-char-600 sm:block"
                         aria-hidden="true"
                       />
-                      <span className="ml-auto whitespace-nowrap font-display text-lg tracking-wide text-ember-400 sm:ml-0">
+                      <span className="ml-auto whitespace-nowrap font-display text-xl tracking-wide text-ember-400 [text-shadow:0_0_14px_rgba(232,114,44,0.35)] sm:ml-0">
                         {formatCLP(item.price)}
                       </span>
                     </div>
                     {item.description && (
-                      <p className="mt-1 text-sm italic leading-snug text-smoke-300">
+                      <p className="mt-1 text-sm italic leading-snug text-smoke-100/70">
                         {item.description}
                       </p>
                     )}
