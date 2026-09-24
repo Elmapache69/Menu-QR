@@ -13,6 +13,7 @@ html,
 body {
   background-color: #0f0d0b;
   color: #f4ede1;
+  overflow-x: hidden;
 }
 
 /* Textura sutil de grano + un resplandor de brasa fijo en la parte

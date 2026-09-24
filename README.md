@@ -39,6 +39,10 @@ service cloud.firestore {
       allow read: if true;
       allow write: if request.auth != null;
     }
+    match /promos/{promoId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
   }
 }
 ```
@@ -99,11 +103,24 @@ Abre `http://localhost:3000` (carta) y `http://localhost:3000/admin`
 - **Carta pública** (`/`): se actualiza sola en cuanto se guarda un
   cambio en el panel — no hay que volver a desplegar nada.
 - **Panel** (`/admin`): inicia sesión con el correo/contraseña creado en
-  el paso 1.4, agrega un plato con nombre, descripción, precio, categoría
-  e imagen. Si escribes una categoría nueva (por ejemplo "Ensaladas"),
-  aparece automáticamente como una nueva sección en la carta.
+  el paso 1.4. Tiene dos pestañas:
+  - **Platos**: agrega/edita/elimina platos (nombre, descripción, precio,
+    categoría, imagen). Si escribes una categoría nueva (por ejemplo
+    "Ensaladas"), aparece automáticamente como una nueva sección en la
+    carta. Cada plato tiene un botón **"Ocultar"** para sacarlo
+    momentáneamente de la carta pública sin borrarlo — útil para platos
+    de temporada o de una ocasión especial. "Mostrar" lo vuelve a activar.
+  - **Promociones y eventos**: título, descripción e imagen opcional.
+    Aparecen como un carrusel arriba de la carta pública (2x1, cumpleaños,
+    partidos, fiestas patrias, etc.). El botón "Ocultar/Mostrar" controla
+    si están visibles sin necesidad de borrarlas.
 - Para agregar más administradores, créales un usuario en
   **Authentication → Users** dentro de Firebase.
+
+Nota: si ya tenías el proyecto desplegado antes de esta versión, solo
+necesitas actualizar las reglas de Firestore (sección de arriba, ahora
+incluyen `promos`) y volver a desplegar — no hace falta tocar nada más
+en Firebase ni Cloudinary.
 
 ---
 
@@ -111,12 +128,17 @@ Abre `http://localhost:3000` (carta) y `http://localhost:3000/admin`
 
 ```
 app/
-  page.js            → carta pública
-  admin/page.js       → login + panel de administración
+  page.js            → carta pública (incluye el carrusel de promociones)
+  admin/page.js       → login + panel de administración (pestañas Platos / Promociones)
 components/
   AdminItemForm.js     → formulario agregar/editar plato (sube fotos a Cloudinary)
-  AdminItemList.js      → listado con editar/eliminar
+  AdminItemList.js      → listado de platos, con ocultar/editar/eliminar
+  AdminPromoForm.js      → formulario agregar/editar promoción o evento
+  AdminPromoList.js       → listado de promociones, con ocultar/editar/eliminar
+  PromoCarousel.js         → carrusel público de promociones/eventos
+  FlameIcon.js              → ícono de marca reutilizado en toda la app
 lib/
   firebase.js           → conexión a Firestore y Authentication
-  format.js              → formato de precios (CLP) y orden de categorías
+  cloudinary.js           → subida de imágenes a Cloudinary
+  format.js                → formato de precios (CLP) y orden de categorías
 ```

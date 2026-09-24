@@ -9,30 +9,17 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { CATEGORY_ORDER } from "@/lib/format";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 
-const emptyForm = {
-  name: "",
-  description: "",
-  price: "",
-  category: "",
-  hidden: false,
-};
+const emptyForm = { title: "", description: "", active: true };
 
-export default function AdminItemForm({
-  editingItem,
-  existingCategories,
-  onDone,
-}) {
+export default function AdminPromoForm({ editingPromo, onDone }) {
   const [form, setForm] = useState(
-    editingItem
+    editingPromo
       ? {
-          name: editingItem.name || "",
-          description: editingItem.description || "",
-          price: editingItem.price || "",
-          category: editingItem.category || "",
-          hidden: editingItem.hidden || false,
+          title: editingPromo.title || "",
+          description: editingPromo.description || "",
+          active: editingPromo.active !== false,
         }
       : emptyForm
   );
@@ -40,40 +27,34 @@ export default function AdminItemForm({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const categoryOptions = Array.from(
-    new Set([...CATEGORY_ORDER, ...existingCategories])
-  );
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    if (!form.name.trim() || !form.category.trim() || form.price === "") {
-      setError("Nombre, categoría y precio son obligatorios.");
+    if (!form.title.trim() && !file && !editingPromo?.imageUrl) {
+      setError("Agrega al menos un título o una imagen.");
       return;
     }
 
     setSaving(true);
     try {
-      let imageUrl = editingItem?.imageUrl || "";
+      let imageUrl = editingPromo?.imageUrl || "";
 
       if (file) {
-        imageUrl = await uploadToCloudinary(file, "menu-images");
+        imageUrl = await uploadToCloudinary(file, "promo-images");
       }
 
       const payload = {
-        name: form.name.trim(),
+        title: form.title.trim(),
         description: form.description.trim(),
-        price: Number(form.price) || 0,
-        category: form.category.trim(),
-        hidden: form.hidden,
+        active: form.active,
         imageUrl,
       };
 
-      if (editingItem) {
-        await updateDoc(doc(db, "items", editingItem.id), payload);
+      if (editingPromo) {
+        await updateDoc(doc(db, "promos", editingPromo.id), payload);
       } else {
-        await addDoc(collection(db, "items"), {
+        await addDoc(collection(db, "promos"), {
           ...payload,
           createdAt: serverTimestamp(),
         });
@@ -94,16 +75,16 @@ export default function AdminItemForm({
       className="space-y-4 rounded-lg border border-char-700 bg-char-900 p-5"
     >
       <h3 className="font-display text-xl tracking-wide text-ember-400">
-        {editingItem ? "Editar plato" : "Agregar plato"}
+        {editingPromo ? "Editar promoción" : "Agregar promoción o evento"}
       </h3>
 
       <div>
-        <label className="mb-1 block text-sm text-smoke-300">Nombre</label>
+        <label className="mb-1 block text-sm text-smoke-300">Título</label>
         <input
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          value={form.title}
+          onChange={(e) => setForm({ ...form, title: e.target.value })}
           className="w-full rounded border border-char-600 bg-char-800 px-3 py-2 text-smoke-100 focus:border-ember-500"
-          placeholder="Ej: Lomo vetado"
+          placeholder="Ej: 2x1 en tragos los jueves"
         />
       </div>
 
@@ -116,46 +97,13 @@ export default function AdminItemForm({
           onChange={(e) => setForm({ ...form, description: e.target.value })}
           className="w-full rounded border border-char-600 bg-char-800 px-3 py-2 text-smoke-100 focus:border-ember-500"
           rows={2}
-          placeholder="Ingredientes o detalle del plato"
+          placeholder="Detalle breve de la promoción o evento"
         />
-      </div>
-
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <div className="flex-1">
-          <label className="mb-1 block text-sm text-smoke-300">
-            Precio (CLP)
-          </label>
-          <input
-            type="number"
-            min="0"
-            value={form.price}
-            onChange={(e) => setForm({ ...form, price: e.target.value })}
-            className="w-full rounded border border-char-600 bg-char-800 px-3 py-2 text-smoke-100 focus:border-ember-500"
-            placeholder="8990"
-          />
-        </div>
-        <div className="flex-1">
-          <label className="mb-1 block text-sm text-smoke-300">
-            Categoría
-          </label>
-          <input
-            list="category-options"
-            value={form.category}
-            onChange={(e) => setForm({ ...form, category: e.target.value })}
-            className="w-full rounded border border-char-600 bg-char-800 px-3 py-2 text-smoke-100 focus:border-ember-500"
-            placeholder="Ej: Parrilladas"
-          />
-          <datalist id="category-options">
-            {categoryOptions.map((c) => (
-              <option key={c} value={c} />
-            ))}
-          </datalist>
-        </div>
       </div>
 
       <div>
         <label className="mb-1 block text-sm text-smoke-300">
-          Imagen {editingItem?.imageUrl ? "(deja vacío para conservar)" : ""}
+          Imagen {editingPromo?.imageUrl ? "(deja vacío para conservar)" : ""}
         </label>
         <input
           type="file"
@@ -168,11 +116,11 @@ export default function AdminItemForm({
       <label className="flex items-center gap-2 text-sm text-smoke-300">
         <input
           type="checkbox"
-          checked={form.hidden}
-          onChange={(e) => setForm({ ...form, hidden: e.target.checked })}
+          checked={form.active}
+          onChange={(e) => setForm({ ...form, active: e.target.checked })}
           className="h-4 w-4 rounded border-char-600 bg-char-800 accent-ember-600"
         />
-        Ocultar de la carta pública (para ocasiones especiales)
+        Mostrar en la carta ahora
       </label>
 
       {error && <p className="text-sm text-ember-400">{error}</p>}
