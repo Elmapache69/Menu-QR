@@ -39,6 +39,72 @@ body {
   box-shadow: 0 0 0 1px rgba(242, 169, 59, 0.15), 0 8px 24px -8px rgba(193, 57, 31, 0.45);
 }
 
+/* Humo ambiental: nubes difuminadas que se mueven muy lento, detrás de
+   todo el contenido. z-index negativo para que quede detrás del flujo
+   normal (que no está posicionado) sin taparlo. */
+.smoke-layer {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.smoke-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(70px);
+  mix-blend-mode: screen;
+}
+
+.smoke-blob.one {
+  width: 55vw;
+  height: 55vw;
+  max-width: 560px;
+  max-height: 560px;
+  top: -12%;
+  left: -15%;
+  background: radial-gradient(circle, rgba(170, 160, 150, 0.22), transparent 70%);
+  animation: smoke-drift-1 32s ease-in-out infinite;
+}
+
+.smoke-blob.two {
+  width: 60vw;
+  height: 60vw;
+  max-width: 620px;
+  max-height: 620px;
+  top: 25%;
+  right: -20%;
+  background: radial-gradient(circle, rgba(130, 120, 112, 0.18), transparent 70%);
+  animation: smoke-drift-2 40s ease-in-out infinite;
+}
+
+.smoke-blob.three {
+  width: 50vw;
+  height: 50vw;
+  max-width: 480px;
+  max-height: 480px;
+  bottom: -15%;
+  left: 15%;
+  background: radial-gradient(circle, rgba(150, 138, 128, 0.16), transparent 70%);
+  animation: smoke-drift-3 36s ease-in-out infinite;
+}
+
+@keyframes smoke-drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(6vw, 4vh) scale(1.15); }
+}
+
+@keyframes smoke-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-5vw, 3vh) scale(1.1); }
+}
+
+@keyframes smoke-drift-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(4vw, -3vh) scale(1.08); }
+}
+
 ::selection {
   background: #c1391f;
   color: #f4ede1;

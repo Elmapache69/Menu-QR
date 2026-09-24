@@ -28,6 +28,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="es">
       <body className={`${display.variable} ${body.variable} font-body`}>
+        <div className="smoke-layer" aria-hidden="true">
+          <div className="smoke-blob one" />
+          <div className="smoke-blob two" />
+          <div className="smoke-blob three" />
+        </div>
         {children}
       </body>
     </html>

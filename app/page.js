@@ -121,21 +121,24 @@ export default function MenuPage() {
         </div>
 
         {categories.length > 0 && (
-          <nav className="scrollbar-none mx-auto flex max-w-xl gap-2 overflow-x-auto px-4 py-3 sm:px-5">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => scrollTo(cat)}
-                className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition-all sm:px-4 ${
-                  activeCategory === cat
-                    ? "bg-gradient-to-r from-ember-600 to-ember-500 text-smoke-100 brand-glow"
-                    : "bg-char-900 text-smoke-300 ring-1 ring-char-700 hover:ring-ember-600/50"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </nav>
+          <div className="relative">
+            <nav className="scrollbar-none mx-auto flex max-w-xl gap-2 overflow-x-auto px-4 py-3 sm:px-5">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => scrollTo(cat)}
+                  className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition-all sm:px-4 ${
+                    activeCategory === cat
+                      ? "bg-gradient-to-r from-ember-600 to-ember-500 text-smoke-100 brand-glow"
+                      : "bg-char-900 text-smoke-300 ring-1 ring-char-700 hover:ring-ember-600/50"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </nav>
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-char-950 to-transparent" />
+          </div>
         )}
       </header>
 
