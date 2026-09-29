@@ -43,6 +43,10 @@ service cloud.firestore {
       allow read: if true;
       allow write: if request.auth != null;
     }
+    match /categoryImages/{categoryId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
   }
 }
 ```
@@ -114,6 +118,10 @@ Abre `http://localhost:3000` (carta) y `http://localhost:3000/admin`
     Aparecen como un carrusel arriba de la carta pública (2x1, cumpleaños,
     partidos, fiestas patrias, etc.). El botón "Ocultar/Mostrar" controla
     si están visibles sin necesidad de borrarlas.
+  - **Fotos de categoría**: una foto grande opcional por categoría (por
+    ejemplo, una buena foto para "Platos de fondo"). En la carta pública,
+    el texto de los platos de esa categoría se acomoda alrededor de la
+    foto en vez de ir en una lista plana.
 - Para agregar más administradores, créales un usuario en
   **Authentication → Users** dentro de Firebase.
 

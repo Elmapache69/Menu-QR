@@ -53,8 +53,7 @@ body {
 .smoke-blob {
   position: absolute;
   border-radius: 9999px;
-  filter: blur(70px);
-  mix-blend-mode: screen;
+  filter: blur(80px);
 }
 
 .smoke-blob.one {
@@ -64,7 +63,7 @@ body {
   max-height: 560px;
   top: -12%;
   left: -15%;
-  background: radial-gradient(circle, rgba(190, 180, 170, 0.4), transparent 70%);
+  background: radial-gradient(circle, rgba(205, 198, 190, 0.16), transparent 70%);
   animation: smoke-drift-1 32s ease-in-out infinite;
 }
 
@@ -75,7 +74,7 @@ body {
   max-height: 620px;
   top: 25%;
   right: -20%;
-  background: radial-gradient(circle, rgba(150, 140, 130, 0.34), transparent 70%);
+  background: radial-gradient(circle, rgba(190, 182, 174, 0.14), transparent 70%);
   animation: smoke-drift-2 40s ease-in-out infinite;
 }
 
@@ -86,7 +85,7 @@ body {
   max-height: 480px;
   bottom: -15%;
   left: 15%;
-  background: radial-gradient(circle, rgba(170, 158, 148, 0.3), transparent 70%);
+  background: radial-gradient(circle, rgba(195, 188, 180, 0.13), transparent 70%);
   animation: smoke-drift-3 36s ease-in-out infinite;
 }
 

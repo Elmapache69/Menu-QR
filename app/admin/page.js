@@ -12,6 +12,8 @@ import AdminItemForm from "@/components/AdminItemForm";
 import AdminItemList from "@/components/AdminItemList";
 import AdminPromoForm from "@/components/AdminPromoForm";
 import AdminPromoList from "@/components/AdminPromoList";
+import AdminCategoryImages from "@/components/AdminCategoryImages";
+import { sortCategories } from "@/lib/format";
 
 export default function AdminPage() {
   const [user, setUser] = useState(undefined); // undefined = cargando
@@ -24,6 +26,8 @@ export default function AdminPage() {
   const [promos, setPromos] = useState([]);
   const [showPromoForm, setShowPromoForm] = useState(false);
   const [editingPromo, setEditingPromo] = useState(null);
+
+  const [categoryImages, setCategoryImages] = useState([]);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, setUser);
@@ -45,9 +49,17 @@ export default function AdminPage() {
       setPromos(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     });
 
+    const unsubCategoryImages = onSnapshot(
+      collection(db, "categoryImages"),
+      (snap) => {
+        setCategoryImages(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      }
+    );
+
     return () => {
       unsubItems();
       unsubPromos();
+      unsubCategoryImages();
     };
   }, [user]);
 
@@ -110,6 +122,16 @@ export default function AdminPage() {
             }`}
           >
             Promociones y eventos
+          </button>
+          <button
+            onClick={() => setTab("categoryImages")}
+            className={`border-b-2 px-3 py-2 text-sm font-medium ${
+              tab === "categoryImages"
+                ? "border-ember-500 text-ember-400"
+                : "border-transparent text-smoke-300 hover:text-smoke-100"
+            }`}
+          >
+            Fotos de categoría
           </button>
         </div>
 
@@ -192,6 +214,13 @@ export default function AdminPage() {
               }}
             />
           </>
+        )}
+
+        {tab === "categoryImages" && (
+          <AdminCategoryImages
+            categories={sortCategories(existingCategories)}
+            categoryImages={categoryImages}
+          />
         )}
       </div>
     </main>

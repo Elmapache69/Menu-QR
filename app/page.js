@@ -14,6 +14,7 @@ const RESTAURANT_NAME =
 export default function MenuPage() {
   const [items, setItems] = useState(null);
   const [promos, setPromos] = useState([]);
+  const [categoryImages, setCategoryImages] = useState({});
   const [activeCategory, setActiveCategory] = useState(null);
   const [error, setError] = useState(null);
 
@@ -38,6 +39,21 @@ export default function MenuPage() {
     const q = query(collection(db, "promos"), orderBy("createdAt", "asc"));
     const unsub = onSnapshot(q, (snap) => {
       setPromos(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    });
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "categoryImages"), (snap) => {
+      const map = {};
+      snap.docs.forEach((d) => {
+        const data = d.data();
+        map[d.id] = {
+          imageUrl: data.imageUrl,
+          position: data.position === "left" ? "left" : "right",
+        };
+      });
+      setCategoryImages(map);
     });
     return () => unsub();
   }, []);
@@ -190,44 +206,60 @@ export default function MenuPage() {
               </div>
             </div>
 
-            <ul className="divide-y divide-char-800/80">
-              {grouped[cat].map((item) => (
-                <li key={item.id} className="flex items-start gap-3 py-4 sm:gap-4">
-                  {item.imageUrl && (
-                    <div className="group relative flex-shrink-0 overflow-hidden rounded-lg">
-                      <Image
-                        src={item.imageUrl}
-                        alt={item.name}
-                        width={96}
-                        height={96}
-                        className="h-20 w-20 rounded-lg object-cover transition-transform duration-300 ease-out active:scale-105 sm:h-24 sm:w-24 sm:group-hover:scale-105"
-                      />
-                      <div className="pointer-events-none absolute inset-0 rounded-lg ring-1 ring-inset ring-black/20" />
-                      <div className="pointer-events-none absolute inset-0 rounded-lg bg-gradient-to-t from-ember-700/10 to-transparent" />
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-baseline gap-x-2">
-                      <h3 className="break-words font-medium text-smoke-100">
-                        {item.name}
-                      </h3>
-                      <span
-                        className="mb-1 hidden min-w-[16px] flex-1 border-b border-dotted border-char-600 sm:block"
-                        aria-hidden="true"
-                      />
-                      <span className="ml-auto whitespace-nowrap font-display text-xl tracking-wide text-ember-400 [text-shadow:0_0_14px_rgba(232,114,44,0.35)] sm:ml-0">
-                        {formatCLP(item.price)}
-                      </span>
-                    </div>
-                    {item.description && (
-                      <p className="mt-1 text-sm italic leading-snug text-smoke-100/70">
-                        {item.description}
-                      </p>
+            <div className="overflow-hidden">
+              {categoryImages[cat] && (
+                <Image
+                  src={categoryImages[cat].imageUrl}
+                  alt={cat}
+                  width={200}
+                  height={200}
+                  className={`mb-2 h-28 w-28 rounded-xl object-cover shadow-lg shadow-black/40 ring-1 ring-char-700 sm:h-44 sm:w-36 ${
+                    categoryImages[cat].position === "left"
+                      ? "float-left mr-3"
+                      : "float-right ml-3"
+                  }`}
+                />
+              )}
+
+              <ul className="divide-y divide-char-800/80">
+                {grouped[cat].map((item) => (
+                  <li key={item.id} className="flex items-start gap-3 py-4 sm:gap-4">
+                    {item.imageUrl && (
+                      <div className="group relative flex-shrink-0 overflow-hidden rounded-lg">
+                        <Image
+                          src={item.imageUrl}
+                          alt={item.name}
+                          width={96}
+                          height={96}
+                          className="h-20 w-20 rounded-lg object-cover transition-transform duration-300 ease-out active:scale-105 sm:h-24 sm:w-24 sm:group-hover:scale-105"
+                        />
+                        <div className="pointer-events-none absolute inset-0 rounded-lg ring-1 ring-inset ring-black/20" />
+                        <div className="pointer-events-none absolute inset-0 rounded-lg bg-gradient-to-t from-ember-700/10 to-transparent" />
+                      </div>
                     )}
-                  </div>
-                </li>
-              ))}
-            </ul>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-baseline gap-x-2">
+                        <h3 className="break-words font-medium text-smoke-100">
+                          {item.name}
+                        </h3>
+                        <span
+                          className="mb-1 hidden min-w-[16px] flex-1 border-b border-dotted border-char-600 sm:block"
+                          aria-hidden="true"
+                        />
+                        <span className="ml-auto whitespace-nowrap font-display text-xl tracking-wide text-ember-400 [text-shadow:0_0_14px_rgba(232,114,44,0.35)] sm:ml-0">
+                          {formatCLP(item.price)}
+                        </span>
+                      </div>
+                      {item.description && (
+                        <p className="mt-1 text-sm italic leading-snug text-smoke-100/70">
+                          {item.description}
+                        </p>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </section>
         ))}
       </div>
