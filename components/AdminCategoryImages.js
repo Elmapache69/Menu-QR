@@ -1,16 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { deleteDoc, doc, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { uploadToCloudinary } from "@/lib/cloudinary";
+import {
+  formatCLP,
+  CATEGORY_IMAGE_ASPECT,
+  CATEGORY_IMAGE_HEIGHT_RANGE,
+  resolveCategoryImageHeight,
+} from "@/lib/format";
 
-export default function AdminCategoryImages({ categories, categoryImages }) {
+const SIZES = [
+  { value: "auto", label: "Automática (según cant. de platos)" },
+  { value: "sm", label: "Pequeña" },
+  { value: "md", label: "Mediana" },
+  { value: "lg", label: "Grande" },
+];
+
+export default function AdminCategoryImages({
+  categories,
+  categoryImages,
+  items,
+}) {
   const [uploadingCat, setUploadingCat] = useState(null);
+  const [previewCat, setPreviewCat] = useState(null);
+  const [localHeight, setLocalHeight] = useState({});
   const [error, setError] = useState("");
+  const debounceRef = useRef({});
 
   const dataFor = (cat) => categoryImages.find((c) => c.id === cat) || null;
+  const itemsFor = (cat) =>
+    items.filter((i) => (i.category || "Otros") === cat);
+
+  const heightFor = (cat) => {
+    if (localHeight[cat] != null) return localHeight[cat];
+    return resolveCategoryImageHeight(dataFor(cat), itemsFor(cat).length);
+  };
 
   const handleFile = async (cat, file) => {
     if (!file) return;
@@ -22,7 +49,10 @@ export default function AdminCategoryImages({ categories, categoryImages }) {
       await setDoc(doc(db, "categoryImages", cat), {
         imageUrl,
         position: existing?.position || "right",
+        size: existing?.size || "auto",
+        customHeight: existing?.customHeight || null,
       });
+      setPreviewCat(cat);
     } catch (err) {
       console.error(err);
       setError("No se pudo subir la imagen. Intenta de nuevo.");
@@ -37,10 +67,34 @@ export default function AdminCategoryImages({ categories, categoryImages }) {
     await updateDoc(doc(db, "categoryImages", cat), { position: next });
   };
 
+  const changePreset = async (cat, size) => {
+    setLocalHeight((prev) => ({ ...prev, [cat]: undefined }));
+    await updateDoc(doc(db, "categoryImages", cat), { size });
+  };
+
+  const handleSlider = (cat, value) => {
+    const height = Number(value);
+    setLocalHeight((prev) => ({ ...prev, [cat]: height }));
+
+    clearTimeout(debounceRef.current[cat]);
+    debounceRef.current[cat] = setTimeout(() => {
+      updateDoc(doc(db, "categoryImages", cat), {
+        size: "custom",
+        customHeight: height,
+      });
+    }, 250);
+  };
+
   const handleRemove = async (cat) => {
     if (!confirm(`¿Quitar la foto de portada de "${cat}"?`)) return;
     await deleteDoc(doc(db, "categoryImages", cat));
   };
+
+  useEffect(() => {
+    return () => {
+      Object.values(debounceRef.current).forEach(clearTimeout);
+    };
+  }, []);
 
   if (categories.length === 0) {
     return (
@@ -55,72 +109,154 @@ export default function AdminCategoryImages({ categories, categoryImages }) {
       <p className="text-sm text-smoke-300">
         Una foto grande por categoría (por ejemplo, una pizza bien lograda
         para "Platos de fondo"). En la carta, el texto de los platos se
-        acomoda alrededor de esa foto. Es opcional — las categorías sin
-        foto se ven como una lista normal. Alterna el lado (izquierda /
-        derecha) entre categorías para que no todas queden iguales.
+        acomoda alrededor de esa foto. Abre "Vista previa" para ver cómo
+        queda con los platos reales de esa categoría y ajustar el tamaño
+        con el control deslizante hasta que calce bien.
       </p>
 
       {error && <p className="mt-2 text-sm text-ember-400">{error}</p>}
 
-      <ul className="mt-4 space-y-2">
+      <ul className="mt-4 space-y-3">
         {categories.map((cat) => {
           const data = dataFor(cat);
           const img = data?.imageUrl || null;
           const position = data?.position || "right";
+          const size = data?.size || "auto";
+          const height = heightFor(cat);
+          const width = Math.round(height * CATEGORY_IMAGE_ASPECT);
+          const catItems = itemsFor(cat);
+
           return (
-            <li
-              key={cat}
-              className="flex flex-wrap items-center gap-3 rounded border border-char-800 p-3"
-            >
-              {img ? (
-                <Image
-                  src={img}
-                  alt={cat}
-                  width={56}
-                  height={56}
-                  className="h-14 w-14 flex-shrink-0 rounded object-cover"
-                />
-              ) : (
-                <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded bg-char-800 text-xs text-smoke-300">
-                  Sin foto
+            <li key={cat} className="rounded border border-char-800 p-3">
+              <div className="flex flex-wrap items-center gap-3">
+                {img ? (
+                  <Image
+                    src={img}
+                    alt={cat}
+                    width={56}
+                    height={56}
+                    className="h-14 w-14 flex-shrink-0 rounded object-cover"
+                  />
+                ) : (
+                  <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded bg-char-800 text-xs text-smoke-300">
+                    Sin foto
+                  </div>
+                )}
+
+                <p className="min-w-0 flex-1 truncate font-medium text-smoke-100">
+                  {cat}{" "}
+                  <span className="text-xs font-normal text-smoke-300">
+                    ({catItems.length} platos)
+                  </span>
+                </p>
+
+                <label className="cursor-pointer rounded border border-char-600 px-3 py-1 text-sm text-smoke-300 hover:border-ember-500">
+                  {uploadingCat === cat
+                    ? "Subiendo…"
+                    : img
+                    ? "Cambiar"
+                    : "Agregar foto"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={uploadingCat === cat}
+                    onChange={(e) => handleFile(cat, e.target.files?.[0])}
+                  />
+                </label>
+
+                {img && (
+                  <>
+                    <button
+                      onClick={() => togglePosition(cat)}
+                      className="rounded border border-char-600 px-3 py-1 text-sm text-smoke-300 hover:border-ember-500"
+                      title="Cambiar de lado"
+                    >
+                      {position === "left" ? "◧ Izquierda" : "◨ Derecha"}
+                    </button>
+                    <select
+                      value={size === "custom" ? "auto" : size}
+                      onChange={(e) => changePreset(cat, e.target.value)}
+                      className="rounded border border-char-600 bg-char-800 px-2 py-1 text-sm text-smoke-300"
+                    >
+                      {SIZES.map((s) => (
+                        <option key={s.value} value={s.value}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() =>
+                        setPreviewCat(previewCat === cat ? null : cat)
+                      }
+                      className="rounded border border-char-600 px-3 py-1 text-sm text-smoke-300 hover:border-ember-500"
+                    >
+                      {previewCat === cat ? "Ocultar vista previa" : "Vista previa"}
+                    </button>
+                    <button
+                      onClick={() => handleRemove(cat)}
+                      className="rounded border border-ember-700 px-3 py-1 text-sm text-ember-400 hover:bg-ember-700/20"
+                    >
+                      Quitar
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {img && previewCat === cat && (
+                <div className="mt-4 rounded-lg border border-char-700 bg-char-950 p-4">
+                  <div className="mb-3 flex items-center gap-3">
+                    <span className="text-xs text-smoke-300">
+                      Tamaño de la foto
+                    </span>
+                    <input
+                      type="range"
+                      min={CATEGORY_IMAGE_HEIGHT_RANGE.min}
+                      max={CATEGORY_IMAGE_HEIGHT_RANGE.max}
+                      step={4}
+                      value={height}
+                      onChange={(e) => handleSlider(cat, e.target.value)}
+                      className="h-1.5 flex-1 accent-ember-600"
+                    />
+                    <span className="w-12 text-right text-xs text-smoke-300">
+                      {height}px
+                    </span>
+                  </div>
+
+                  <div className="overflow-hidden">
+                    <Image
+                      src={img}
+                      alt={cat}
+                      width={width}
+                      height={height}
+                      style={{ height, width }}
+                      className={`mb-2 rounded-xl object-cover shadow-lg shadow-black/40 ring-1 ring-char-700 ${
+                        position === "left"
+                          ? "float-left mr-3"
+                          : "float-right ml-3"
+                      }`}
+                    />
+                    <ul className="divide-y divide-char-800/80 text-sm">
+                      {catItems.length === 0 && (
+                        <li className="py-2 text-smoke-300">
+                          Esta categoría todavía no tiene platos.
+                        </li>
+                      )}
+                      {catItems.map((item) => (
+                        <li
+                          key={item.id}
+                          className="flex items-baseline gap-2 py-2"
+                        >
+                          <span className="text-smoke-100">{item.name}</span>
+                          <span className="flex-1 border-b border-dotted border-char-600" />
+                          <span className="whitespace-nowrap text-ember-400">
+                            {formatCLP(item.price)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
-              )}
-
-              <p className="min-w-0 flex-1 truncate font-medium text-smoke-100">
-                {cat}
-              </p>
-
-              <label className="cursor-pointer rounded border border-char-600 px-3 py-1 text-sm text-smoke-300 hover:border-ember-500">
-                {uploadingCat === cat
-                  ? "Subiendo…"
-                  : img
-                  ? "Cambiar"
-                  : "Agregar foto"}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  disabled={uploadingCat === cat}
-                  onChange={(e) => handleFile(cat, e.target.files?.[0])}
-                />
-              </label>
-
-              {img && (
-                <>
-                  <button
-                    onClick={() => togglePosition(cat)}
-                    className="rounded border border-char-600 px-3 py-1 text-sm text-smoke-300 hover:border-ember-500"
-                    title="Cambiar de lado"
-                  >
-                    {position === "left" ? "◧ Izquierda" : "◨ Derecha"}
-                  </button>
-                  <button
-                    onClick={() => handleRemove(cat)}
-                    className="rounded border border-ember-700 px-3 py-1 text-sm text-ember-400 hover:bg-ember-700/20"
-                  >
-                    Quitar
-                  </button>
-                </>
               )}
             </li>
           );

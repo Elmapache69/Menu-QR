@@ -220,6 +220,7 @@ export default function AdminPage() {
           <AdminCategoryImages
             categories={sortCategories(existingCategories)}
             categoryImages={categoryImages}
+            items={items}
           />
         )}
       </div>

@@ -4,7 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { formatCLP, sortCategories, categoryKicker } from "@/lib/format";
+import {
+  formatCLP,
+  sortCategories,
+  categoryKicker,
+  CATEGORY_IMAGE_ASPECT,
+  resolveCategoryImageHeight,
+} from "@/lib/format";
 import FlameIcon from "@/components/FlameIcon";
 import PromoCarousel from "@/components/PromoCarousel";
 
@@ -51,6 +57,8 @@ export default function MenuPage() {
         map[d.id] = {
           imageUrl: data.imageUrl,
           position: data.position === "left" ? "left" : "right",
+          size: data.size || "auto",
+          customHeight: data.customHeight || null,
         };
       });
       setCategoryImages(map);
@@ -207,19 +215,27 @@ export default function MenuPage() {
             </div>
 
             <div className="overflow-hidden">
-              {categoryImages[cat] && (
-                <Image
-                  src={categoryImages[cat].imageUrl}
-                  alt={cat}
-                  width={200}
-                  height={200}
-                  className={`mb-2 h-28 w-28 rounded-xl object-cover shadow-lg shadow-black/40 ring-1 ring-char-700 sm:h-44 sm:w-36 ${
-                    categoryImages[cat].position === "left"
-                      ? "float-left mr-3"
-                      : "float-right ml-3"
-                  }`}
-                />
-              )}
+              {categoryImages[cat] && (() => {
+                const height = resolveCategoryImageHeight(
+                  categoryImages[cat],
+                  grouped[cat].length
+                );
+                const width = Math.round(height * CATEGORY_IMAGE_ASPECT);
+                return (
+                  <Image
+                    src={categoryImages[cat].imageUrl}
+                    alt={cat}
+                    width={width}
+                    height={height}
+                    style={{ height, width }}
+                    className={`mb-2 rounded-xl object-cover shadow-lg shadow-black/40 ring-1 ring-char-700 ${
+                      categoryImages[cat].position === "left"
+                        ? "float-left mr-3"
+                        : "float-right ml-3"
+                    }`}
+                  />
+                );
+              })()}
 
               <ul className="divide-y divide-char-800/80">
                 {grouped[cat].map((item) => (
