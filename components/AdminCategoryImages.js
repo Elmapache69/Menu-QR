@@ -7,9 +7,12 @@ import { db } from "@/lib/firebase";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import {
   formatCLP,
-  CATEGORY_IMAGE_ASPECT,
   CATEGORY_IMAGE_HEIGHT_RANGE,
+  CATEGORY_IMAGE_GAP_RANGE,
+  CATEGORY_IMAGE_GAP_DEFAULT,
   resolveCategoryImageHeight,
+  categoryImageBox,
+  categoryImageStyle,
 } from "@/lib/format";
 
 const SIZES = [
@@ -17,6 +20,13 @@ const SIZES = [
   { value: "sm", label: "Pequeña" },
   { value: "md", label: "Mediana" },
   { value: "lg", label: "Grande" },
+];
+
+const SHAPES = [
+  { value: "rect", label: "Rectángulo" },
+  { value: "circle", label: "Círculo" },
+  { value: "oval", label: "Óvalo" },
+  { value: "hexagon", label: "Hexágono" },
 ];
 
 export default function AdminCategoryImages({
@@ -27,8 +37,10 @@ export default function AdminCategoryImages({
   const [uploadingCat, setUploadingCat] = useState(null);
   const [previewCat, setPreviewCat] = useState(null);
   const [localHeight, setLocalHeight] = useState({});
+  const [localGap, setLocalGap] = useState({});
   const [error, setError] = useState("");
   const debounceRef = useRef({});
+  const gapDebounceRef = useRef({});
 
   const dataFor = (cat) => categoryImages.find((c) => c.id === cat) || null;
   const itemsFor = (cat) =>
@@ -37,6 +49,11 @@ export default function AdminCategoryImages({
   const heightFor = (cat) => {
     if (localHeight[cat] != null) return localHeight[cat];
     return resolveCategoryImageHeight(dataFor(cat), itemsFor(cat).length);
+  };
+
+  const gapFor = (cat) => {
+    if (localGap[cat] != null) return localGap[cat];
+    return dataFor(cat)?.textGap ?? CATEGORY_IMAGE_GAP_DEFAULT;
   };
 
   const handleFile = async (cat, file) => {
@@ -51,6 +68,8 @@ export default function AdminCategoryImages({
         position: existing?.position || "right",
         size: existing?.size || "auto",
         customHeight: existing?.customHeight || null,
+        shape: existing?.shape || "rect",
+        textGap: existing?.textGap ?? CATEGORY_IMAGE_GAP_DEFAULT,
       });
       setPreviewCat(cat);
     } catch (err) {
@@ -65,6 +84,10 @@ export default function AdminCategoryImages({
     const existing = dataFor(cat);
     const next = existing?.position === "left" ? "right" : "left";
     await updateDoc(doc(db, "categoryImages", cat), { position: next });
+  };
+
+  const changeShape = async (cat, shape) => {
+    await updateDoc(doc(db, "categoryImages", cat), { shape });
   };
 
   const changePreset = async (cat, size) => {
@@ -85,6 +108,16 @@ export default function AdminCategoryImages({
     }, 250);
   };
 
+  const handleGapSlider = (cat, value) => {
+    const gap = Number(value);
+    setLocalGap((prev) => ({ ...prev, [cat]: gap }));
+
+    clearTimeout(gapDebounceRef.current[cat]);
+    gapDebounceRef.current[cat] = setTimeout(() => {
+      updateDoc(doc(db, "categoryImages", cat), { textGap: gap });
+    }, 250);
+  };
+
   const handleRemove = async (cat) => {
     if (!confirm(`¿Quitar la foto de portada de "${cat}"?`)) return;
     await deleteDoc(doc(db, "categoryImages", cat));
@@ -93,6 +126,7 @@ export default function AdminCategoryImages({
   useEffect(() => {
     return () => {
       Object.values(debounceRef.current).forEach(clearTimeout);
+      Object.values(gapDebounceRef.current).forEach(clearTimeout);
     };
   }, []);
 
@@ -122,8 +156,17 @@ export default function AdminCategoryImages({
           const img = data?.imageUrl || null;
           const position = data?.position || "right";
           const size = data?.size || "auto";
+          const shape = data?.shape || "rect";
           const height = heightFor(cat);
-          const width = Math.round(height * CATEGORY_IMAGE_ASPECT);
+          const gap = gapFor(cat);
+          const box = categoryImageBox(shape, height);
+          const visual = categoryImageStyle(
+            shape,
+            box.height,
+            box.width,
+            position,
+            gap
+          );
           const catItems = itemsFor(cat);
 
           return (
@@ -185,6 +228,17 @@ export default function AdminCategoryImages({
                         </option>
                       ))}
                     </select>
+                    <select
+                      value={shape}
+                      onChange={(e) => changeShape(cat, e.target.value)}
+                      className="rounded border border-char-600 bg-char-800 px-2 py-1 text-sm text-smoke-300"
+                    >
+                      {SHAPES.map((s) => (
+                        <option key={s.value} value={s.value}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
                     <button
                       onClick={() =>
                         setPreviewCat(previewCat === cat ? null : cat)
@@ -223,18 +277,34 @@ export default function AdminCategoryImages({
                     </span>
                   </div>
 
+                  <div className="mb-3 flex items-center gap-3">
+                    <span className="text-xs text-smoke-300">
+                      Separación del texto
+                    </span>
+                    <input
+                      type="range"
+                      min={CATEGORY_IMAGE_GAP_RANGE.min}
+                      max={CATEGORY_IMAGE_GAP_RANGE.max}
+                      step={2}
+                      value={gap}
+                      onChange={(e) => handleGapSlider(cat, e.target.value)}
+                      className="h-1.5 flex-1 accent-ember-600"
+                    />
+                    <span className="w-12 text-right text-xs text-smoke-300">
+                      {gap}px
+                    </span>
+                  </div>
+
                   <div className="overflow-hidden">
                     <Image
                       src={img}
                       alt={cat}
-                      width={width}
-                      height={height}
-                      style={{ height, width }}
-                      className={`mb-2 rounded-xl object-cover shadow-lg shadow-black/40 ring-1 ring-char-700 ${
-                        position === "left"
-                          ? "float-left mr-3"
-                          : "float-right ml-3"
-                      }`}
+                      width={box.width}
+                      height={box.height}
+                      style={visual.style}
+                      className={`object-cover shadow-lg shadow-black/40 ring-1 ring-char-700 ${
+                        visual.className
+                      } ${position === "left" ? "float-left" : "float-right"}`}
                     />
                     <ul className="divide-y divide-char-800/80 text-sm">
                       {catItems.length === 0 && (

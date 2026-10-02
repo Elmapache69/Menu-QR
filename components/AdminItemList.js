@@ -6,6 +6,16 @@ import { db } from "@/lib/firebase";
 import { formatCLP, sortCategories } from "@/lib/format";
 import FlameIcon from "@/components/FlameIcon";
 
+function sortByOrder(items) {
+  // Sort estable: los que no tienen "order" (platos antiguos) conservan
+  // su orden original (que es por fecha de creación).
+  return [...items].sort((a, b) => {
+    const ao = a.order ?? Infinity;
+    const bo = b.order ?? Infinity;
+    return ao - bo;
+  });
+}
+
 export default function AdminItemList({ items, onEdit }) {
   const categories = sortCategories(
     Array.from(new Set(items.map((i) => i.category || "Otros")))
@@ -20,6 +30,19 @@ export default function AdminItemList({ items, onEdit }) {
     await updateDoc(doc(db, "items", item.id), { hidden: !item.hidden });
   };
 
+  const moveItem = async (catItems, index, direction) => {
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= catItems.length) return;
+    const reordered = [...catItems];
+    const [moved] = reordered.splice(index, 1);
+    reordered.splice(newIndex, 0, moved);
+    await Promise.all(
+      reordered.map((it, idx) =>
+        updateDoc(doc(db, "items", it.id), { order: idx })
+      )
+    );
+  };
+
   if (items.length === 0) {
     return (
       <p className="mt-6 text-sm text-smoke-300">
@@ -30,19 +53,42 @@ export default function AdminItemList({ items, onEdit }) {
 
   return (
     <div className="mt-6 space-y-8">
-      {categories.map((cat) => (
-        <div key={cat}>
-          <h3 className="mb-2 font-display text-lg tracking-wide text-ember-400">
-            {cat}
-          </h3>
-          <ul className="divide-y divide-char-800 rounded border border-char-800">
-            {items
-              .filter((i) => (i.category || "Otros") === cat)
-              .map((item) => (
+      {categories.map((cat) => {
+        const catItems = sortByOrder(
+          items.filter((i) => (i.category || "Otros") === cat)
+        );
+        return (
+          <div key={cat}>
+            <h3 className="mb-2 font-display text-lg tracking-wide text-ember-400">
+              {cat}
+            </h3>
+            <ul className="divide-y divide-char-800 rounded border border-char-800">
+              {catItems.map((item, index) => (
                 <li
                   key={item.id}
                   className="flex flex-wrap items-center gap-3 p-3"
                 >
+                  <div className="flex flex-shrink-0 flex-col">
+                    <button
+                      onClick={() => moveItem(catItems, index, -1)}
+                      disabled={index === 0}
+                      className="px-1 text-smoke-300 hover:text-ember-400 disabled:opacity-20"
+                      aria-label="Subir"
+                      title="Subir"
+                    >
+                      ▲
+                    </button>
+                    <button
+                      onClick={() => moveItem(catItems, index, 1)}
+                      disabled={index === catItems.length - 1}
+                      className="px-1 text-smoke-300 hover:text-ember-400 disabled:opacity-20"
+                      aria-label="Bajar"
+                      title="Bajar"
+                    >
+                      ▼
+                    </button>
+                  </div>
+
                   {item.imageUrl ? (
                     <Image
                       src={item.imageUrl}
@@ -91,9 +137,10 @@ export default function AdminItemList({ items, onEdit }) {
                   </div>
                 </li>
               ))}
-          </ul>
-        </div>
-      ))}
+            </ul>
+          </div>
+        );
+      })}
     </div>
   );
 }

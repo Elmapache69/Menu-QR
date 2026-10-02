@@ -8,8 +8,9 @@ import {
   formatCLP,
   sortCategories,
   categoryKicker,
-  CATEGORY_IMAGE_ASPECT,
   resolveCategoryImageHeight,
+  categoryImageBox,
+  categoryImageStyle,
 } from "@/lib/format";
 import FlameIcon from "@/components/FlameIcon";
 import PromoCarousel from "@/components/PromoCarousel";
@@ -59,6 +60,8 @@ export default function MenuPage() {
           position: data.position === "left" ? "left" : "right",
           size: data.size || "auto",
           customHeight: data.customHeight || null,
+          shape: data.shape || "rect",
+          textGap: data.textGap,
         };
       });
       setCategoryImages(map);
@@ -100,12 +103,19 @@ export default function MenuPage() {
   }, [visibleItems]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const grouped = useMemo(() => {
-    return visibleItems.reduce((acc, item) => {
+    const acc = visibleItems.reduce((acc, item) => {
       const cat = item.category || "Otros";
       acc[cat] = acc[cat] || [];
       acc[cat].push(item);
       return acc;
     }, {});
+    // Respeta el orden que el admin dejó para cada categoría (flechas
+    // subir/bajar). Los platos sin "order" (más antiguos) conservan su
+    // orden por fecha de creación.
+    Object.keys(acc).forEach((cat) => {
+      acc[cat].sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity));
+    });
+    return acc;
   }, [visibleItems]);
 
   const scrollTo = (cat) => {
@@ -216,23 +226,29 @@ export default function MenuPage() {
 
             <div className="overflow-hidden">
               {categoryImages[cat] && (() => {
-                const height = resolveCategoryImageHeight(
-                  categoryImages[cat],
+                const catImg = categoryImages[cat];
+                const rawHeight = resolveCategoryImageHeight(
+                  catImg,
                   grouped[cat].length
                 );
-                const width = Math.round(height * CATEGORY_IMAGE_ASPECT);
+                const box = categoryImageBox(catImg.shape, rawHeight);
+                const visual = categoryImageStyle(
+                  catImg.shape,
+                  box.height,
+                  box.width,
+                  catImg.position,
+                  catImg.textGap
+                );
                 return (
                   <Image
-                    src={categoryImages[cat].imageUrl}
+                    src={catImg.imageUrl}
                     alt={cat}
-                    width={width}
-                    height={height}
-                    style={{ height, width }}
-                    className={`mb-2 rounded-xl object-cover shadow-lg shadow-black/40 ring-1 ring-char-700 ${
-                      categoryImages[cat].position === "left"
-                        ? "float-left mr-3"
-                        : "float-right ml-3"
-                    }`}
+                    width={box.width}
+                    height={box.height}
+                    style={visual.style}
+                    className={`object-cover shadow-lg shadow-black/40 ring-1 ring-char-700 ${
+                      visual.className
+                    } ${catImg.position === "left" ? "float-left" : "float-right"}`}
                   />
                 );
               })()}

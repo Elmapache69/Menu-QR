@@ -108,7 +108,8 @@ Abre `http://localhost:3000` (carta) y `http://localhost:3000/admin`
   cambio en el panel — no hay que volver a desplegar nada.
 - **Panel** (`/admin`): inicia sesión con el correo/contraseña creado en
   el paso 1.4. Tiene dos pestañas:
-  - **Platos**: agrega/edita/elimina platos (nombre, descripción, precio,
+  - **Platos**: agrega/edita/elimina platos, y con las flechas ▲▼ de
+    cada fila ordenas los platos dentro de su categoría a tu gusto (nombre, descripción, precio,
     categoría, imagen). Si escribes una categoría nueva (por ejemplo
     "Ensaladas"), aparece automáticamente como una nueva sección en la
     carta. Cada plato tiene un botón **"Ocultar"** para sacarlo
@@ -121,7 +122,12 @@ Abre `http://localhost:3000` (carta) y `http://localhost:3000/admin`
   - **Fotos de categoría**: una foto grande opcional por categoría (por
     ejemplo, una buena foto para "Platos de fondo"). En la carta pública,
     el texto de los platos de esa categoría se acomoda alrededor de la
-    foto en vez de ir en una lista plana.
+    foto en vez de ir en una lista plana. Tiene "Vista previa" con los
+    platos reales y un control deslizante para ajustar el tamaño exacto,
+    lado (izquierda/derecha), y forma: "Rectángulo", "Círculo", "Óvalo"
+    o "Hexágono" (el
+    texto abraza el borde redondo — ideal para fotos de platos servidos
+    en algo circular, como una sartén o un plato hondo).
 - Para agregar más administradores, créales un usuario en
   **Authentication → Users** dentro de Firebase.
 
