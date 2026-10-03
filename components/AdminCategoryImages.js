@@ -11,9 +11,8 @@ import {
   CATEGORY_IMAGE_GAP_RANGE,
   CATEGORY_IMAGE_GAP_DEFAULT,
   resolveCategoryImageHeight,
-  categoryImageBox,
-  categoryImageStyle,
 } from "@/lib/format";
+import CategoryImageBlock from "@/components/CategoryImageBlock";
 
 const SIZES = [
   { value: "auto", label: "Automática (según cant. de platos)" },
@@ -27,6 +26,11 @@ const SHAPES = [
   { value: "circle", label: "Círculo" },
   { value: "oval", label: "Óvalo" },
   { value: "hexagon", label: "Hexágono" },
+];
+
+const LAYOUTS = [
+  { value: "beside", label: "Al lado del texto" },
+  { value: "overlay", label: "De fondo, texto encima" },
 ];
 
 export default function AdminCategoryImages({
@@ -70,6 +74,7 @@ export default function AdminCategoryImages({
         customHeight: existing?.customHeight || null,
         shape: existing?.shape || "rect",
         textGap: existing?.textGap ?? CATEGORY_IMAGE_GAP_DEFAULT,
+        layout: existing?.layout || "beside",
       });
       setPreviewCat(cat);
     } catch (err) {
@@ -88,6 +93,10 @@ export default function AdminCategoryImages({
 
   const changeShape = async (cat, shape) => {
     await updateDoc(doc(db, "categoryImages", cat), { shape });
+  };
+
+  const changeLayout = async (cat, layout) => {
+    await updateDoc(doc(db, "categoryImages", cat), { layout });
   };
 
   const changePreset = async (cat, size) => {
@@ -157,16 +166,9 @@ export default function AdminCategoryImages({
           const position = data?.position || "right";
           const size = data?.size || "auto";
           const shape = data?.shape || "rect";
+          const layout = data?.layout || "beside";
           const height = heightFor(cat);
           const gap = gapFor(cat);
-          const box = categoryImageBox(shape, height);
-          const visual = categoryImageStyle(
-            shape,
-            box.height,
-            box.width,
-            position,
-            gap
-          );
           const catItems = itemsFor(cat);
 
           return (
@@ -239,6 +241,17 @@ export default function AdminCategoryImages({
                         </option>
                       ))}
                     </select>
+                    <select
+                      value={layout}
+                      onChange={(e) => changeLayout(cat, e.target.value)}
+                      className="rounded border border-char-600 bg-char-800 px-2 py-1 text-sm text-smoke-300"
+                    >
+                      {LAYOUTS.map((l) => (
+                        <option key={l.value} value={l.value}>
+                          {l.label}
+                        </option>
+                      ))}
+                    </select>
                     <button
                       onClick={() =>
                         setPreviewCat(previewCat === cat ? null : cat)
@@ -295,17 +308,15 @@ export default function AdminCategoryImages({
                     </span>
                   </div>
 
-                  <div className="overflow-hidden">
-                    <Image
-                      src={img}
-                      alt={cat}
-                      width={box.width}
-                      height={box.height}
-                      style={visual.style}
-                      className={`object-cover shadow-lg shadow-black/40 ring-1 ring-char-700 ${
-                        visual.className
-                      } ${position === "left" ? "float-left" : "float-right"}`}
-                    />
+                  <CategoryImageBlock
+                    imageUrl={img}
+                    alt={cat}
+                    shape={shape}
+                    height={height}
+                    position={position}
+                    gap={gap}
+                    layout={layout}
+                  >
                     <ul className="divide-y divide-char-800/80 text-sm">
                       {catItems.length === 0 && (
                         <li className="py-2 text-smoke-300">
@@ -325,7 +336,7 @@ export default function AdminCategoryImages({
                         </li>
                       ))}
                     </ul>
-                  </div>
+                  </CategoryImageBlock>
                 </div>
               )}
             </li>

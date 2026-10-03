@@ -124,10 +124,13 @@ Abre `http://localhost:3000` (carta) y `http://localhost:3000/admin`
     el texto de los platos de esa categoría se acomoda alrededor de la
     foto en vez de ir en una lista plana. Tiene "Vista previa" con los
     platos reales y un control deslizante para ajustar el tamaño exacto,
-    lado (izquierda/derecha), y forma: "Rectángulo", "Círculo", "Óvalo"
-    o "Hexágono" (el
-    texto abraza el borde redondo — ideal para fotos de platos servidos
-    en algo circular, como una sartén o un plato hondo).
+    lado (izquierda/derecha), forma ("Rectángulo", "Círculo", "Óvalo" u
+    "Hexágono") y diseño: "Al lado del texto" (la foto achicada, el
+    texto a un costado) o "De fondo, texto encima" (la foto ocupa toda
+    la sección como fondo, con un degradado oscuro, y el texto queda
+    encima siguiendo igual el contorno de la forma elegida). Las formas
+    redondas son ideales para fotos de platos servidos en algo
+    circular, como una sartén o un plato hondo.
 - Para agregar más administradores, créales un usuario en
   **Authentication → Users** dentro de Firebase.
 
