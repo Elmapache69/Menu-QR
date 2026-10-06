@@ -47,6 +47,10 @@ service cloud.firestore {
       allow read: if true;
       allow write: if request.auth != null;
     }
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
   }
 }
 ```
@@ -130,9 +134,30 @@ Abre `http://localhost:3000` (carta) y `http://localhost:3000/admin`
     la sección como fondo, con un degradado oscuro, y el texto queda
     encima siguiendo igual el contorno de la forma elegida). Las formas
     redondas son ideales para fotos de platos servidos en algo
-    circular, como una sartén o un plato hondo.
+    circular, como una sartén o un plato hondo. En modo "De fondo,
+    texto encima" con forma círculo u óvalo, un control extra
+    ("Posición del área libre") permite mover arriba/abajo la zona
+    donde se ve la foto sin texto encima, para calzarla con dónde
+    aparece el plato en tu foto.
+  - **Apariencia**: cambia los colores de acento de toda la carta según
+    la fecha — Normal, 🎃 Halloween, 🎄 Navidad o 🇨🇱 Fiestas Patrias. El
+    resto del diseño (fotos, orden de platos, fondo oscuro) no cambia,
+    solo los tonos destacados (precios, pestañas de categoría, línea
+    bajo el logo).
 - Para agregar más administradores, créales un usuario en
   **Authentication → Users** dentro de Firebase.
+- **Buscador** en la carta pública (ícono de lupa junto al nombre):
+  filtra los platos por nombre o descripción, sin distinguir
+  mayúsculas ni tildes.
+- Al compartir el link de la carta (WhatsApp, Instagram, etc.) se
+  muestra tu logo y nombre — para que funcione bien, define
+  `NEXT_PUBLIC_SITE_URL` en Vercel con la URL real ya publicada.
+- Redes sociales en el pie de página: define
+  `NEXT_PUBLIC_INSTAGRAM_URL` y/o `NEXT_PUBLIC_FACEBOOK_URL` en Vercel
+  para que aparezcan los íconos (si los dejas vacíos, no se muestran).
+- El panel de administración ahora muestra un aviso breve
+  ("✓ Guardado") cada vez que agregas, editas, ocultas o eliminas
+  algo, para confirmar que el cambio se guardó.
 
 Nota: si ya tenías el proyecto desplegado antes de esta versión, solo
 necesitas actualizar las reglas de Firestore (sección de arriba, ahora

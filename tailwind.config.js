@@ -14,11 +14,14 @@ module.exports = {
           700: "#2b2521",
           600: "#3d3530",
         },
+        // Colores "ember" controlados por variables CSS (ver globals.css)
+        // para poder cambiar de tema (Halloween, Navidad, Fiestas
+        // Patrias) sin tocar cada componente que usa estos colores.
         ember: {
-          400: "#f2a93b",
-          500: "#e8722c",
-          600: "#c1391f",
-          700: "#8f2416",
+          400: "rgb(var(--ember-400) / <alpha-value>)",
+          500: "rgb(var(--ember-500) / <alpha-value>)",
+          600: "rgb(var(--ember-600) / <alpha-value>)",
+          700: "rgb(var(--ember-700) / <alpha-value>)",
         },
         smoke: {
           100: "#f4ede1",

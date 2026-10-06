@@ -4,16 +4,21 @@ import Image from "next/image";
 import { deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import FlameIcon from "@/components/FlameIcon";
+import { useToast } from "@/components/Toast";
 
 export default function AdminPromoList({ promos, onEdit }) {
+  const showToast = useToast();
+
   const handleDelete = async (promo) => {
     if (!confirm(`¿Eliminar la promoción "${promo.title || "sin título"}"?`))
       return;
     await deleteDoc(doc(db, "promos", promo.id));
+    showToast("Promoción eliminada");
   };
 
   const toggleActive = async (promo) => {
     await updateDoc(doc(db, "promos", promo.id), { active: !promo.active });
+    showToast(promo.active ? "Promoción ocultada" : "Promoción visible");
   };
 
   if (promos.length === 0) {

@@ -11,6 +11,7 @@ import {
 import { db } from "@/lib/firebase";
 import { CATEGORY_ORDER } from "@/lib/format";
 import { uploadToCloudinary } from "@/lib/cloudinary";
+import { useToast } from "@/components/Toast";
 
 const emptyForm = {
   name: "",
@@ -39,6 +40,7 @@ export default function AdminItemForm({
   const [file, setFile] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const showToast = useToast();
 
   const categoryOptions = Array.from(
     new Set([...CATEGORY_ORDER, ...existingCategories])
@@ -79,10 +81,12 @@ export default function AdminItemForm({
         });
       }
 
+      showToast(editingItem ? "Plato actualizado" : "Plato agregado");
       onDone();
     } catch (err) {
       console.error(err);
       setError("No se pudo guardar. Intenta de nuevo.");
+      showToast("No se pudo guardar", "error");
     } finally {
       setSaving(false);
     }

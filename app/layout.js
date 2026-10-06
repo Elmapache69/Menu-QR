@@ -13,9 +13,29 @@ const body = Work_Sans({
   variable: "--font-body",
 });
 
+const SITE_NAME =
+  process.env.NEXT_PUBLIC_RESTAURANT_NAME || "Rincón El Sauce";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+const TITLE = `${SITE_NAME} | Carta`;
+const DESCRIPTION = `Carta digital de ${SITE_NAME} Parrilladas`;
+
 export const metadata = {
-  title: "Rincón El Sauce | Carta",
-  description: "Carta digital de Rincón El Sauce Parrilladas",
+  metadataBase: new URL(SITE_URL),
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    images: ["/logo.png"],
+    locale: "es_CL",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: ["/logo.png"],
+  },
 };
 
 export const viewport = {

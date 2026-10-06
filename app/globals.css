@@ -2,6 +2,41 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Paleta "ember" (acento) por defecto — fuego/parrilla. Los modos
+   estacionales de abajo solo redefinen estas 4 variables; el resto del
+   sitio (fondos, textos, humo) se mantiene igual en todos los modos. */
+:root {
+  --ember-400: 242 169 59; /* dorado */
+  --ember-500: 232 114 44; /* naranja brasa */
+  --ember-600: 193 57 31; /* rojo brasa */
+  --ember-700: 143 36 22; /* rojo oscuro */
+}
+
+/* Halloween: naranja calabaza → morado brujo */
+[data-theme="halloween"] {
+  --ember-400: 255 177 61;
+  --ember-500: 255 123 0;
+  --ember-600: 122 47 150;
+  --ember-700: 72 23 92;
+}
+
+/* Navidad: dorado → rojo y verde pino (el degradado rojo-verde sale
+   solo en las pestañas de categoría activas y en los bordes) */
+[data-theme="christmas"] {
+  --ember-400: 255 214 128;
+  --ember-500: 203 34 48;
+  --ember-600: 20 110 62;
+  --ember-700: 12 70 40;
+}
+
+/* Fiestas Patrias: blanco → azul y rojo (bandera chilena) */
+[data-theme="fiestasPatrias"] {
+  --ember-400: 245 245 245;
+  --ember-500: 206 30 40;
+  --ember-600: 21 69 125;
+  --ember-700: 13 46 84;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;
@@ -32,11 +67,18 @@ body {
 .ember-rule {
   height: 2px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #c1391f, #f2a93b 45%, transparent);
+  background: linear-gradient(
+    90deg,
+    rgb(var(--ember-600)),
+    rgb(var(--ember-400)) 45%,
+    transparent
+  );
 }
 
 .brand-glow {
-  box-shadow: 0 0 0 1px rgba(242, 169, 59, 0.15), 0 8px 24px -8px rgba(193, 57, 31, 0.45);
+  box-shadow:
+    0 0 0 1px rgb(var(--ember-400) / 0.15),
+    0 8px 24px -8px rgb(var(--ember-600) / 0.45);
 }
 
 /* Humo ambiental: nubes difuminadas que se mueven muy lento, detrás de

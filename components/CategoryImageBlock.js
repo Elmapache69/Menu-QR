@@ -9,10 +9,18 @@ export default function CategoryImageBlock({
   position,
   gap,
   layout,
+  focusY,
   children,
 }) {
   const box = categoryImageBox(shape, height);
-  const visual = categoryImageStyle(shape, box.height, box.width, position, gap);
+  const visual = categoryImageStyle(
+    shape,
+    box.height,
+    box.width,
+    position,
+    gap,
+    layout === "overlay" ? focusY : undefined
+  );
   const floatClass = position === "left" ? "float-left" : "float-right";
 
   if (layout === "overlay") {
@@ -22,7 +30,7 @@ export default function CategoryImageBlock({
         : "bg-gradient-to-r from-char-950/95 via-char-950/75 to-transparent";
 
     return (
-      <div className="relative overflow-hidden rounded-xl ring-1 ring-char-700">
+      <div className="relative isolate overflow-hidden rounded-xl ring-1 ring-char-700">
         <Image
           src={imageUrl}
           alt={alt}

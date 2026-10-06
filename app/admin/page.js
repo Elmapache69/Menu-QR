@@ -6,16 +6,32 @@ import {
   signInWithEmailAndPassword,
   signOut,
 } from "firebase/auth";
-import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  onSnapshot,
+  orderBy,
+  query,
+} from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import AdminItemForm from "@/components/AdminItemForm";
 import AdminItemList from "@/components/AdminItemList";
 import AdminPromoForm from "@/components/AdminPromoForm";
 import AdminPromoList from "@/components/AdminPromoList";
 import AdminCategoryImages from "@/components/AdminCategoryImages";
+import AdminTheme from "@/components/AdminTheme";
+import { ToastProvider } from "@/components/Toast";
 import { sortCategories } from "@/lib/format";
 
 export default function AdminPage() {
+  return (
+    <ToastProvider>
+      <AdminPageInner />
+    </ToastProvider>
+  );
+}
+
+function AdminPageInner() {
   const [user, setUser] = useState(undefined); // undefined = cargando
   const [tab, setTab] = useState("items");
 
@@ -28,6 +44,7 @@ export default function AdminPage() {
   const [editingPromo, setEditingPromo] = useState(null);
 
   const [categoryImages, setCategoryImages] = useState([]);
+  const [theme, setTheme] = useState("default");
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, setUser);
@@ -56,10 +73,15 @@ export default function AdminPage() {
       }
     );
 
+    const unsubTheme = onSnapshot(doc(db, "settings", "general"), (snap) => {
+      setTheme(snap.data()?.theme || "default");
+    });
+
     return () => {
       unsubItems();
       unsubPromos();
       unsubCategoryImages();
+      unsubTheme();
     };
   }, [user]);
 
@@ -132,6 +154,16 @@ export default function AdminPage() {
             }`}
           >
             Fotos de categoría
+          </button>
+          <button
+            onClick={() => setTab("theme")}
+            className={`border-b-2 px-3 py-2 text-sm font-medium ${
+              tab === "theme"
+                ? "border-ember-500 text-ember-400"
+                : "border-transparent text-smoke-300 hover:text-smoke-100"
+            }`}
+          >
+            Apariencia
           </button>
         </div>
 
@@ -223,6 +255,8 @@ export default function AdminPage() {
             items={items}
           />
         )}
+
+        {tab === "theme" && <AdminTheme theme={theme} />}
       </div>
     </main>
   );

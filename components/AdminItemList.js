@@ -5,6 +5,7 @@ import { deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { formatCLP, sortCategories } from "@/lib/format";
 import FlameIcon from "@/components/FlameIcon";
+import { useToast } from "@/components/Toast";
 
 function sortByOrder(items) {
   // Sort estable: los que no tienen "order" (platos antiguos) conservan
@@ -17,6 +18,7 @@ function sortByOrder(items) {
 }
 
 export default function AdminItemList({ items, onEdit }) {
+  const showToast = useToast();
   const categories = sortCategories(
     Array.from(new Set(items.map((i) => i.category || "Otros")))
   );
@@ -24,10 +26,12 @@ export default function AdminItemList({ items, onEdit }) {
   const handleDelete = async (item) => {
     if (!confirm(`¿Eliminar "${item.name}" de la carta?`)) return;
     await deleteDoc(doc(db, "items", item.id));
+    showToast("Plato eliminado");
   };
 
   const toggleHidden = async (item) => {
     await updateDoc(doc(db, "items", item.id), { hidden: !item.hidden });
+    showToast(item.hidden ? "Plato visible de nuevo" : "Plato ocultado");
   };
 
   const moveItem = async (catItems, index, direction) => {

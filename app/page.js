@@ -2,7 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  onSnapshot,
+  orderBy,
+  query,
+} from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import {
   formatCLP,
@@ -17,12 +23,38 @@ import CategoryImageBlock from "@/components/CategoryImageBlock";
 const RESTAURANT_NAME =
   process.env.NEXT_PUBLIC_RESTAURANT_NAME || "Rincón El Sauce";
 
+const INSTAGRAM_URL = process.env.NEXT_PUBLIC_INSTAGRAM_URL || "";
+const FACEBOOK_URL = process.env.NEXT_PUBLIC_FACEBOOK_URL || "";
+
+function normalize(str) {
+  return (str || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+const THEME_EMOJI = {
+  halloween: "🎃",
+  christmas: "🎄",
+  fiestasPatrias: "🇨🇱",
+};
+
 export default function MenuPage() {
   const [items, setItems] = useState(null);
   const [promos, setPromos] = useState([]);
   const [categoryImages, setCategoryImages] = useState({});
+  const [theme, setTheme] = useState("default");
   const [activeCategory, setActiveCategory] = useState(null);
   const [error, setError] = useState(null);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    const onScroll = () => setShowBackToTop(window.scrollY > 500);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     const q = query(collection(db, "items"), orderBy("createdAt", "asc"));
@@ -38,6 +70,13 @@ export default function MenuPage() {
         );
       }
     );
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, "settings", "general"), (snap) => {
+      setTheme(snap.data()?.theme || "default");
+    });
     return () => unsub();
   }, []);
 
@@ -62,6 +101,7 @@ export default function MenuPage() {
           shape: data.shape || "rect",
           textGap: data.textGap,
           layout: data.layout || "beside",
+          focusY: data.focusY,
         };
       });
       setCategoryImages(map);
@@ -90,20 +130,30 @@ export default function MenuPage() {
     [items]
   );
 
+  const searchTerm = normalize(searchQuery.trim());
+  const displayItems = useMemo(() => {
+    if (!searchTerm) return visibleItems;
+    return visibleItems.filter(
+      (i) =>
+        normalize(i.name).includes(searchTerm) ||
+        normalize(i.description).includes(searchTerm)
+    );
+  }, [visibleItems, searchTerm]);
+
   const activePromos = useMemo(
     () => promos.filter((p) => p.active !== false),
     [promos]
   );
 
   const categories = useMemo(() => {
-    const set = new Set(visibleItems.map((i) => i.category).filter(Boolean));
+    const set = new Set(displayItems.map((i) => i.category).filter(Boolean));
     const sorted = sortCategories([...set]);
     if (sorted.length && activeCategory === null) setActiveCategory(sorted[0]);
     return sorted;
-  }, [visibleItems]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [displayItems]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const grouped = useMemo(() => {
-    const acc = visibleItems.reduce((acc, item) => {
+    const acc = displayItems.reduce((acc, item) => {
       const cat = item.category || "Otros";
       acc[cat] = acc[cat] || [];
       acc[cat].push(item);
@@ -116,7 +166,7 @@ export default function MenuPage() {
       acc[cat].sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity));
     });
     return acc;
-  }, [visibleItems]);
+  }, [displayItems]);
 
   const scrollTo = (cat) => {
     setActiveCategory(cat);
@@ -126,7 +176,7 @@ export default function MenuPage() {
   };
 
   return (
-    <main className="min-h-screen pb-20">
+    <main className="min-h-screen pb-20" data-theme={theme}>
       <header className="sticky top-0 z-20 border-b border-char-800 bg-char-950/90 backdrop-blur">
         <div className="mx-auto flex max-w-xl items-center gap-3 px-4 pt-4 sm:px-5 sm:pt-5">
           <div className="relative h-12 w-12 flex-shrink-0 sm:h-14 sm:w-14">
@@ -140,15 +190,60 @@ export default function MenuPage() {
               priority
             />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h1 className="truncate font-display text-2xl leading-none tracking-wide text-smoke-100 sm:text-3xl">
               {RESTAURANT_NAME}
             </h1>
             <p className="mt-1 text-[10px] uppercase tracking-[0.25em] text-ember-400 sm:text-[11px]">
-              Parrilladas
+              Parrilladas{" "}
+              {THEME_EMOJI[theme] && (
+                <span className="tracking-normal">{THEME_EMOJI[theme]}</span>
+              )}
             </p>
           </div>
+          <button
+            onClick={() => {
+              setSearchOpen((v) => !v);
+              if (searchOpen) setSearchQuery("");
+            }}
+            aria-label="Buscar en la carta"
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-smoke-300 transition-colors hover:text-ember-400"
+          >
+            {searchOpen ? (
+              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+                <path
+                  d="M6 6l12 12M18 6 6 18"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+                <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="2" />
+                <path
+                  d="m20 20-3.8-3.8"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            )}
+          </button>
         </div>
+
+        {searchOpen && (
+          <div className="mx-auto mt-3 max-w-xl px-4 sm:px-5">
+            <input
+              type="text"
+              autoFocus
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar un plato…"
+              className="w-full rounded-full border border-char-700 bg-char-900 px-4 py-2 text-sm text-smoke-100 placeholder:text-smoke-300 focus:border-ember-500"
+            />
+          </div>
+        )}
 
         <div className="mx-auto mt-3 h-[2px] max-w-xl px-4 sm:px-0">
           <div className="ember-rule h-full" />
@@ -186,7 +281,26 @@ export default function MenuPage() {
         )}
 
         {!error && items === null && (
-          <p className="mt-10 text-center text-smoke-300">Cargando carta…</p>
+          <div className="mt-10 animate-pulse space-y-10">
+            {[0, 1].map((section) => (
+              <div key={section}>
+                <div className="mb-5 flex items-center gap-3">
+                  <div className="h-5 w-5 rounded-full bg-char-800" />
+                  <div className="h-6 w-32 rounded bg-char-800" />
+                  <div className="h-[2px] flex-1 bg-char-800" />
+                </div>
+                <div className="space-y-4">
+                  {[0, 1, 2].map((row) => (
+                    <div key={row} className="flex items-center gap-3 py-1">
+                      <div className="h-4 w-36 rounded bg-char-800" />
+                      <div className="h-px flex-1 bg-char-800" />
+                      <div className="h-4 w-14 rounded bg-char-800" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
 
         {!error && items !== null && visibleItems.length === 0 && (
@@ -201,6 +315,18 @@ export default function MenuPage() {
             </p>
           </div>
         )}
+
+        {!error &&
+          visibleItems.length > 0 &&
+          searchTerm &&
+          displayItems.length === 0 && (
+            <div className="mt-16 text-center text-smoke-300">
+              <p className="font-display text-xl tracking-wide text-ember-400">
+                No encontramos "{searchQuery}"
+              </p>
+              <p className="mt-2 text-sm">Prueba con otra palabra.</p>
+            </div>
+          )}
 
         {categories.map((cat) => (
           <section
@@ -278,6 +404,7 @@ export default function MenuPage() {
                   position={catImg.position}
                   gap={catImg.textGap}
                   layout={catImg.layout}
+                  focusY={catImg.focusY}
                 >
                   {itemList}
                 </CategoryImageBlock>
@@ -288,10 +415,81 @@ export default function MenuPage() {
       </div>
 
       <footer className="mt-20 text-center text-xs text-char-600">
+        {(INSTAGRAM_URL || FACEBOOK_URL) && (
+          <div className="mb-4 flex justify-center gap-4">
+            {INSTAGRAM_URL && (
+              <a
+                href={INSTAGRAM_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram"
+                className="text-smoke-300 transition-colors hover:text-ember-400"
+              >
+                <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6">
+                  <rect
+                    x="3"
+                    y="3"
+                    width="18"
+                    height="18"
+                    rx="5"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                  />
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="4"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                  />
+                  <circle cx="17.2" cy="6.8" r="1" fill="currentColor" />
+                </svg>
+              </a>
+            )}
+            {FACEBOOK_URL && (
+              <a
+                href={FACEBOOK_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Facebook"
+                className="text-smoke-300 transition-colors hover:text-ember-400"
+              >
+                <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6">
+                  <path
+                    d="M14 9h2.5V6H14c-1.93 0-3.5 1.57-3.5 3.5V11H8v3h2.5v6h3v-6h2.3l.7-3h-3V9.5c0-.3.2-.5.5-.5Z"
+                    stroke="currentColor"
+                    strokeWidth="1.2"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </a>
+            )}
+          </div>
+        )}
         <a href="/admin" className="hover:text-smoke-300">
           Panel de administración
         </a>
       </footer>
+
+      <button
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        aria-label="Volver arriba"
+        className={`fixed bottom-5 right-5 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-r from-ember-600 to-ember-500 text-smoke-100 brand-glow transition-all duration-300 ${
+          showBackToTop
+            ? "translate-y-0 opacity-100"
+            : "pointer-events-none translate-y-4 opacity-0"
+        }`}
+      >
+        <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+          <path
+            d="M12 19V5M12 5l-6 6M12 5l6 6"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
     </main>
   );
 }

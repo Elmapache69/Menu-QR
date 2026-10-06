@@ -10,6 +10,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { uploadToCloudinary } from "@/lib/cloudinary";
+import { useToast } from "@/components/Toast";
 
 const emptyForm = { title: "", description: "", active: true };
 
@@ -26,6 +27,7 @@ export default function AdminPromoForm({ editingPromo, onDone }) {
   const [file, setFile] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const showToast = useToast();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -60,10 +62,12 @@ export default function AdminPromoForm({ editingPromo, onDone }) {
         });
       }
 
+      showToast(editingPromo ? "Promoción actualizada" : "Promoción agregada");
       onDone();
     } catch (err) {
       console.error(err);
       setError("No se pudo guardar. Intenta de nuevo.");
+      showToast("No se pudo guardar", "error");
     } finally {
       setSaving(false);
     }

@@ -10,9 +10,11 @@ import {
   CATEGORY_IMAGE_HEIGHT_RANGE,
   CATEGORY_IMAGE_GAP_RANGE,
   CATEGORY_IMAGE_GAP_DEFAULT,
+  CATEGORY_IMAGE_FOCUS_DEFAULT,
   resolveCategoryImageHeight,
 } from "@/lib/format";
 import CategoryImageBlock from "@/components/CategoryImageBlock";
+import { useToast } from "@/components/Toast";
 
 const SIZES = [
   { value: "auto", label: "Automática (según cant. de platos)" },
@@ -42,9 +44,12 @@ export default function AdminCategoryImages({
   const [previewCat, setPreviewCat] = useState(null);
   const [localHeight, setLocalHeight] = useState({});
   const [localGap, setLocalGap] = useState({});
+  const [localFocus, setLocalFocus] = useState({});
   const [error, setError] = useState("");
+  const showToast = useToast();
   const debounceRef = useRef({});
   const gapDebounceRef = useRef({});
+  const focusDebounceRef = useRef({});
 
   const dataFor = (cat) => categoryImages.find((c) => c.id === cat) || null;
   const itemsFor = (cat) =>
@@ -58,6 +63,11 @@ export default function AdminCategoryImages({
   const gapFor = (cat) => {
     if (localGap[cat] != null) return localGap[cat];
     return dataFor(cat)?.textGap ?? CATEGORY_IMAGE_GAP_DEFAULT;
+  };
+
+  const focusFor = (cat) => {
+    if (localFocus[cat] != null) return localFocus[cat];
+    return dataFor(cat)?.focusY ?? CATEGORY_IMAGE_FOCUS_DEFAULT;
   };
 
   const handleFile = async (cat, file) => {
@@ -75,11 +85,14 @@ export default function AdminCategoryImages({
         shape: existing?.shape || "rect",
         textGap: existing?.textGap ?? CATEGORY_IMAGE_GAP_DEFAULT,
         layout: existing?.layout || "beside",
+        focusY: existing?.focusY ?? CATEGORY_IMAGE_FOCUS_DEFAULT,
       });
       setPreviewCat(cat);
+      showToast("Foto de categoría guardada");
     } catch (err) {
       console.error(err);
       setError("No se pudo subir la imagen. Intenta de nuevo.");
+      showToast("No se pudo subir la imagen", "error");
     } finally {
       setUploadingCat(null);
     }
@@ -89,19 +102,23 @@ export default function AdminCategoryImages({
     const existing = dataFor(cat);
     const next = existing?.position === "left" ? "right" : "left";
     await updateDoc(doc(db, "categoryImages", cat), { position: next });
+    showToast(next === "left" ? "Foto a la izquierda" : "Foto a la derecha");
   };
 
   const changeShape = async (cat, shape) => {
     await updateDoc(doc(db, "categoryImages", cat), { shape });
+    showToast("Forma actualizada");
   };
 
   const changeLayout = async (cat, layout) => {
     await updateDoc(doc(db, "categoryImages", cat), { layout });
+    showToast("Diseño actualizado");
   };
 
   const changePreset = async (cat, size) => {
     setLocalHeight((prev) => ({ ...prev, [cat]: undefined }));
     await updateDoc(doc(db, "categoryImages", cat), { size });
+    showToast("Tamaño actualizado");
   };
 
   const handleSlider = (cat, value) => {
@@ -127,15 +144,27 @@ export default function AdminCategoryImages({
     }, 250);
   };
 
+  const handleFocusSlider = (cat, value) => {
+    const focusY = Number(value);
+    setLocalFocus((prev) => ({ ...prev, [cat]: focusY }));
+
+    clearTimeout(focusDebounceRef.current[cat]);
+    focusDebounceRef.current[cat] = setTimeout(() => {
+      updateDoc(doc(db, "categoryImages", cat), { focusY });
+    }, 250);
+  };
+
   const handleRemove = async (cat) => {
     if (!confirm(`¿Quitar la foto de portada de "${cat}"?`)) return;
     await deleteDoc(doc(db, "categoryImages", cat));
+    showToast("Foto eliminada");
   };
 
   useEffect(() => {
     return () => {
       Object.values(debounceRef.current).forEach(clearTimeout);
       Object.values(gapDebounceRef.current).forEach(clearTimeout);
+      Object.values(focusDebounceRef.current).forEach(clearTimeout);
     };
   }, []);
 
@@ -169,7 +198,10 @@ export default function AdminCategoryImages({
           const layout = data?.layout || "beside";
           const height = heightFor(cat);
           const gap = gapFor(cat);
+          const focusY = focusFor(cat);
           const catItems = itemsFor(cat);
+          const showFocusSlider =
+            layout === "overlay" && (shape === "circle" || shape === "oval");
 
           return (
             <li key={cat} className="rounded border border-char-800 p-3">
@@ -308,6 +340,26 @@ export default function AdminCategoryImages({
                     </span>
                   </div>
 
+                  {showFocusSlider && (
+                    <div className="mb-3 flex items-center gap-3">
+                      <span className="text-xs text-smoke-300">
+                        Posición del área libre
+                      </span>
+                      <input
+                        type="range"
+                        min={10}
+                        max={90}
+                        step={2}
+                        value={focusY}
+                        onChange={(e) => handleFocusSlider(cat, e.target.value)}
+                        className="h-1.5 flex-1 accent-ember-600"
+                      />
+                      <span className="w-20 text-right text-xs text-smoke-300">
+                        {focusY < 40 ? "Arriba" : focusY > 60 ? "Abajo" : "Centro"}
+                      </span>
+                    </div>
+                  )}
+
                   <CategoryImageBlock
                     imageUrl={img}
                     alt={cat}
@@ -316,6 +368,7 @@ export default function AdminCategoryImages({
                     position={position}
                     gap={gap}
                     layout={layout}
+                    focusY={focusY}
                   >
                     <ul className="divide-y divide-char-800/80 text-sm">
                       {catItems.length === 0 && (
