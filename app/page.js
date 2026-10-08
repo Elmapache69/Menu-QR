@@ -17,6 +17,7 @@ import {
   resolveCategoryImageHeight,
 } from "@/lib/format";
 import FlameIcon from "@/components/FlameIcon";
+import ThemeDecorations from "@/components/ThemeDecorations";
 import PromoCarousel from "@/components/PromoCarousel";
 import CategoryImageBlock from "@/components/CategoryImageBlock";
 
@@ -44,6 +45,13 @@ export default function MenuPage() {
   const [promos, setPromos] = useState([]);
   const [categoryImages, setCategoryImages] = useState({});
   const [theme, setTheme] = useState("default");
+
+  // El fondo de <body> es ANCESTRO de <main>, así que una variable CSS
+  // puesta solo en <main data-theme=...> nunca le llega (las variables
+  // CSS no suben). Por eso el tema también se aplica en <html>.
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
   const [activeCategory, setActiveCategory] = useState(null);
   const [error, setError] = useState(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -177,6 +185,7 @@ export default function MenuPage() {
 
   return (
     <main className="min-h-screen pb-20" data-theme={theme}>
+      <ThemeDecorations theme={theme} />
       <header className="sticky top-0 z-20 border-b border-char-800 bg-char-950/90 backdrop-blur">
         <div className="mx-auto flex max-w-xl items-center gap-3 px-4 pt-4 sm:px-5 sm:pt-5">
           <div className="relative h-12 w-12 flex-shrink-0 sm:h-14 sm:w-14">

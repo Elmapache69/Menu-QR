@@ -15,12 +15,23 @@ const body = Work_Sans({
 
 const SITE_NAME =
   process.env.NEXT_PUBLIC_RESTAURANT_NAME || "Rincón El Sauce";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 const TITLE = `${SITE_NAME} | Carta`;
 const DESCRIPTION = `Carta digital de ${SITE_NAME} Parrilladas`;
 
+// Si NEXT_PUBLIC_SITE_URL no está definida o tiene un valor inválido
+// (espacios, texto pegado por error, etc.), usamos un valor por
+// defecto en vez de dejar que se caiga todo el sitio.
+function safeSiteUrl() {
+  const raw = (process.env.NEXT_PUBLIC_SITE_URL || "").trim();
+  try {
+    return new URL(raw);
+  } catch {
+    return new URL("http://localhost:3000");
+  }
+}
+
 export const metadata = {
-  metadataBase: new URL(SITE_URL),
+  metadataBase: safeSiteUrl(),
   title: TITLE,
   description: DESCRIPTION,
   openGraph: {

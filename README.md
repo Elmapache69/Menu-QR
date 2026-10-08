@@ -142,8 +142,10 @@ Abre `http://localhost:3000` (carta) y `http://localhost:3000/admin`
   - **Apariencia**: cambia los colores de acento de toda la carta según
     la fecha — Normal, 🎃 Halloween, 🎄 Navidad o 🇨🇱 Fiestas Patrias. El
     resto del diseño (fotos, orden de platos, fondo oscuro) no cambia,
-    solo los tonos destacados (precios, pestañas de categoría, línea
-    bajo el logo).
+    los tonos destacados, el tinte del fondo y el humo. Además cada modo
+    tiene su decoración: telarañas y una arañita en Halloween, una
+    guirnalda de luces con copos de nieve en Navidad, y banderines
+    rojo-blanco-azul en Fiestas Patrias.
 - Para agregar más administradores, créales un usuario en
   **Authentication → Users** dentro de Firebase.
 - **Buscador** en la carta pública (ícono de lupa junto al nombre):
