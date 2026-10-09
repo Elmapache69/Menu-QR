@@ -122,23 +122,26 @@ Abre `http://localhost:3000` (carta) y `http://localhost:3000/admin`
   - **Promociones y eventos**: título, descripción e imagen opcional.
     Aparecen como un carrusel arriba de la carta pública (2x1, cumpleaños,
     partidos, fiestas patrias, etc.). El botón "Ocultar/Mostrar" controla
-    si están visibles sin necesidad de borrarlas.
-  - **Fotos de categoría**: una foto grande opcional por categoría (por
-    ejemplo, una buena foto para "Platos de fondo"). En la carta pública,
-    el texto de los platos de esa categoría se acomoda alrededor de la
-    foto en vez de ir en una lista plana. Tiene "Vista previa" con los
-    platos reales y un control deslizante para ajustar el tamaño exacto,
-    lado (izquierda/derecha), forma ("Rectángulo", "Círculo", "Óvalo" u
-    "Hexágono") y diseño: "Al lado del texto" (la foto achicada, el
-    texto a un costado) o "De fondo, texto encima" (la foto ocupa toda
-    la sección como fondo, con un degradado oscuro, y el texto queda
-    encima siguiendo igual el contorno de la forma elegida). Las formas
-    redondas son ideales para fotos de platos servidos en algo
-    circular, como una sartén o un plato hondo. En modo "De fondo,
-    texto encima" con forma círculo u óvalo, un control extra
-    ("Posición del área libre") permite mover arriba/abajo la zona
-    donde se ve la foto sin texto encima, para calzarla con dónde
-    aparece el plato en tu foto.
+    si están visibles sin necesidad de borrarlas. El editor muestra una
+    vista previa en escritorio y móvil. Usa **Imagen completa** para
+    conservar todo un afiche o **Rellenar** para recortar y ajustar el
+    encuadre horizontal y vertical. El texto puede ir debajo o encima.
+    Las promociones existentes se muestran completas, con el texto debajo,
+    hasta que guardes otra presentación. El carrusel admite miniaturas,
+    flechas, teclado y deslizamiento; se pausa al interactuar o salir de la pestaña.
+  - **Fotos de categoría**: abre **Agregar imagen** o **Editar imagen**.
+    La foto se muestra como fondo de toda la categoría, detrás del título
+    y los platos. Ajusta el encuadre horizontal y vertical, y el sombreado
+    para mantener legibles los nombres y precios. La vista previa permite
+    revisar el resultado en móvil y escritorio con los platos visibles.
+    Las imágenes guardadas con diseños anteriores también se muestran
+    como fondo. **Guardar imagen** publica los cambios;
+    **Deshacer** recupera lo guardado. Quitar una imagen también requiere guardar.
+    Se conservan los documentos y opciones de categorías anteriores.
+    Para subir archivos, configura `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` y
+    `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET` (unsigned) en `.env.local` y en
+    el entorno publicado. Se admiten JPG, PNG, WebP, AVIF y GIF hasta 10 MB.
+    La selección local y el ajuste de la vista previa no suben archivos.
   - **Apariencia**: elige entre Cobre & carbón, Olivo, Reserva, Halloween,
     Navidad y Fiestas Patrias. Cada paleta combina fondo, texto, bordes y
     acentos. La vista previa permite elegir una categoría de platos visibles
@@ -190,6 +193,9 @@ components/
   AdminPromoForm.js      → formulario agregar/editar promoción o evento
   AdminPromoList.js       → listado de promociones, con ocultar/editar/eliminar
   PromoCarousel.js         → carrusel público de promociones/eventos
+  PromoSlide.js             → imagen y texto compartidos con el editor de promociones
+  AdminCategoryImages.js    → editor de fondos, formas y vista previa de categorías
+  CategoryImageBlock.js     → fondo de categoría con encuadre y sombreado
   MenuIntro.js              → portada compartida con la vista previa
   MenuSection.js            → categorías y platos de la carta
   MenuPhoto.js              → fotografías ampliables con diálogo accesible

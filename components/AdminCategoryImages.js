@@ -1,401 +1,145 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Image from "next/image";
-import { deleteDoc, doc, setDoc, updateDoc } from "firebase/firestore";
+import { deleteDoc, doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { uploadToCloudinary } from "@/lib/cloudinary";
-import {
-  formatCLP,
-  CATEGORY_IMAGE_HEIGHT_RANGE,
-  CATEGORY_IMAGE_GAP_RANGE,
-  CATEGORY_IMAGE_GAP_DEFAULT,
-  CATEGORY_IMAGE_FOCUS_DEFAULT,
-  resolveCategoryImageHeight,
-} from "@/lib/format";
-import CategoryImageBlock from "@/components/CategoryImageBlock";
+import { IMAGE_ACCEPT, uploadToCloudinary, validateImageFile } from "@/lib/cloudinary";
+import { resolveCategoryImage } from "@/lib/image-settings";
+import useObjectUrl from "@/lib/use-object-url";
+import MenuSection from "@/components/MenuSection";
+import { ImageRange } from "@/components/ImageControls";
 import { useToast } from "@/components/Toast";
 
-const SIZES = [
-  { value: "auto", label: "Automática (según cant. de platos)" },
-  { value: "sm", label: "Pequeña" },
-  { value: "md", label: "Mediana" },
-  { value: "lg", label: "Grande" },
-];
-
-const SHAPES = [
-  { value: "rect", label: "Rectángulo" },
-  { value: "circle", label: "Círculo" },
-  { value: "oval", label: "Óvalo" },
-  { value: "hexagon", label: "Hexágono" },
-];
-
-const LAYOUTS = [
-  { value: "beside", label: "Al lado del texto" },
-  { value: "overlay", label: "De fondo, texto encima" },
-];
-
-export default function AdminCategoryImages({
-  categories,
-  categoryImages,
-  items,
-}) {
-  const [uploadingCat, setUploadingCat] = useState(null);
-  const [previewCat, setPreviewCat] = useState(null);
-  const [localHeight, setLocalHeight] = useState({});
-  const [localGap, setLocalGap] = useState({});
-  const [localFocus, setLocalFocus] = useState({});
+function CategoryEditor({ category, data, items, expanded, onToggle }) {
+  const inputId = useId();
+  const saved = resolveCategoryImage(data);
+  const savedSignature = JSON.stringify(saved);
+  const previousSaved = useRef(savedSignature);
+  const [draft, setDraft] = useState(saved);
+  const [file, setFile] = useState(null);
+  const [removed, setRemoved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [previewSize, setPreviewSize] = useState("desktop");
+  const uploaded = useRef(null);
+  const previewUrl = useObjectUrl(file);
   const showToast = useToast();
-  const debounceRef = useRef({});
-  const gapDebounceRef = useRef({});
-  const focusDebounceRef = useRef({});
-
-  const dataFor = (cat) => categoryImages.find((c) => c.id === cat) || null;
-  const itemsFor = (cat) =>
-    items.filter((i) => (i.category || "Otros") === cat);
-
-  const heightFor = (cat) => {
-    if (localHeight[cat] != null) return localHeight[cat];
-    return resolveCategoryImageHeight(dataFor(cat), itemsFor(cat).length);
-  };
-
-  const gapFor = (cat) => {
-    if (localGap[cat] != null) return localGap[cat];
-    return dataFor(cat)?.textGap ?? CATEGORY_IMAGE_GAP_DEFAULT;
-  };
-
-  const focusFor = (cat) => {
-    if (localFocus[cat] != null) return localFocus[cat];
-    return dataFor(cat)?.focusY ?? CATEGORY_IMAGE_FOCUS_DEFAULT;
-  };
-
-  const handleFile = async (cat, file) => {
-    if (!file) return;
-    setError("");
-    setUploadingCat(cat);
-    try {
-      const imageUrl = await uploadToCloudinary(file, "category-images");
-      const existing = dataFor(cat);
-      await setDoc(doc(db, "categoryImages", cat), {
-        imageUrl,
-        position: existing?.position || "right",
-        size: existing?.size || "auto",
-        customHeight: existing?.customHeight || null,
-        shape: existing?.shape || "rect",
-        textGap: existing?.textGap ?? CATEGORY_IMAGE_GAP_DEFAULT,
-        layout: existing?.layout || "beside",
-        focusY: existing?.focusY ?? CATEGORY_IMAGE_FOCUS_DEFAULT,
-      });
-      setPreviewCat(cat);
-      showToast("Foto de categoría guardada");
-    } catch (err) {
-      console.error(err);
-      setError("No se pudo subir la imagen. Intenta de nuevo.");
-      showToast("No se pudo subir la imagen", "error");
-    } finally {
-      setUploadingCat(null);
-    }
-  };
-
-  const togglePosition = async (cat) => {
-    const existing = dataFor(cat);
-    const next = existing?.position === "left" ? "right" : "left";
-    await updateDoc(doc(db, "categoryImages", cat), { position: next });
-    showToast(next === "left" ? "Foto a la izquierda" : "Foto a la derecha");
-  };
-
-  const changeShape = async (cat, shape) => {
-    await updateDoc(doc(db, "categoryImages", cat), { shape });
-    showToast("Forma actualizada");
-  };
-
-  const changeLayout = async (cat, layout) => {
-    await updateDoc(doc(db, "categoryImages", cat), { layout });
-    showToast("Diseño actualizado");
-  };
-
-  const changePreset = async (cat, size) => {
-    setLocalHeight((prev) => ({ ...prev, [cat]: undefined }));
-    await updateDoc(doc(db, "categoryImages", cat), { size });
-    showToast("Tamaño actualizado");
-  };
-
-  const handleSlider = (cat, value) => {
-    const height = Number(value);
-    setLocalHeight((prev) => ({ ...prev, [cat]: height }));
-
-    clearTimeout(debounceRef.current[cat]);
-    debounceRef.current[cat] = setTimeout(() => {
-      updateDoc(doc(db, "categoryImages", cat), {
-        size: "custom",
-        customHeight: height,
-      });
-    }, 250);
-  };
-
-  const handleGapSlider = (cat, value) => {
-    const gap = Number(value);
-    setLocalGap((prev) => ({ ...prev, [cat]: gap }));
-
-    clearTimeout(gapDebounceRef.current[cat]);
-    gapDebounceRef.current[cat] = setTimeout(() => {
-      updateDoc(doc(db, "categoryImages", cat), { textGap: gap });
-    }, 250);
-  };
-
-  const handleFocusSlider = (cat, value) => {
-    const focusY = Number(value);
-    setLocalFocus((prev) => ({ ...prev, [cat]: focusY }));
-
-    clearTimeout(focusDebounceRef.current[cat]);
-    focusDebounceRef.current[cat] = setTimeout(() => {
-      updateDoc(doc(db, "categoryImages", cat), { focusY });
-    }, 250);
-  };
-
-  const handleRemove = async (cat) => {
-    if (!confirm(`¿Quitar la foto de portada de "${cat}"?`)) return;
-    await deleteDoc(doc(db, "categoryImages", cat));
-    showToast("Foto eliminada");
-  };
+  const dirty = Boolean(file) || removed || JSON.stringify(draft) !== savedSignature;
+  const imageUrl = previewUrl || (removed ? "" : draft.imageUrl);
 
   useEffect(() => {
-    return () => {
-      Object.values(debounceRef.current).forEach(clearTimeout);
-      Object.values(gapDebounceRef.current).forEach(clearTimeout);
-      Object.values(focusDebounceRef.current).forEach(clearTimeout);
-    };
-  }, []);
+    const previous = previousSaved.current;
+    setDraft((current) => JSON.stringify(current) === previous ? JSON.parse(savedSignature) : current);
+    previousSaved.current = savedSignature;
+  }, [savedSignature]);
 
-  if (categories.length === 0) {
-    return (
-      <p className="mt-6 text-sm text-smoke-300">
-        Agrega primero algún plato para poder elegir una categoría.
-      </p>
-    );
-  }
+  const update = (key, value) => { setDraft((current) => ({ ...current, [key]: value })); setError(""); };
+  const reset = () => {
+    setDraft(saved); setFile(null); setRemoved(false); setError(""); uploaded.current = null;
+  };
+  const selectFile = (event) => {
+    const selected = event.target.files?.[0];
+    event.target.value = "";
+    if (!selected) return;
+    try {
+      validateImageFile(selected);
+      setFile(selected); setRemoved(false); setError(""); uploaded.current = null;
+    } catch (err) { setError(err.message); }
+  };
 
-  return (
-    <div className="mt-4">
-      <p className="text-sm text-smoke-300">
-        Una foto grande por categoría (por ejemplo, una pizza bien lograda
-        para "Platos de fondo"). En la carta, el texto de los platos se
-        acomoda alrededor de esa foto. Abre "Vista previa" para ver cómo
-        queda con los platos reales de esa categoría y ajustar el tamaño
-        con el control deslizante hasta que calce bien.
-      </p>
+  const save = async () => {
+    if (saving || !dirty) return;
+    if (!removed && !file && !imageUrl) { setError("Elige una imagen para esta categoría."); return; }
+    setSaving(true); setError("");
+    try {
+      if (removed) {
+        await deleteDoc(doc(db, "categoryImages", category));
+        setDraft(resolveCategoryImage(null)); setRemoved(false); setFile(null);
+        showToast("Imagen de categoría retirada");
+      } else {
+        let savedUrl = draft.imageUrl;
+        if (file) {
+          if (uploaded.current?.file !== file) uploaded.current = { file, url: await uploadToCloudinary(file, "category-images") };
+          savedUrl = uploaded.current.url;
+        }
+        const payload = { ...draft, imageUrl: savedUrl };
+        await setDoc(doc(db, "categoryImages", category), payload, { merge: true });
+        setDraft(payload); setFile(null); uploaded.current = null;
+        showToast("Imagen de categoría guardada");
+      }
+    } catch (err) {
+      console.error(err);
+      setError(err.code ? "No se pudo guardar. Tus ajustes siguen aquí; vuelve a intentarlo." : err.message || "No se pudo guardar. Intenta de nuevo.");
+      showToast("No se pudo guardar", "error");
+    } finally { setSaving(false); }
+  };
 
-      {error && <p className="mt-2 text-sm text-ember-400">{error}</p>}
-
-      <ul className="mt-4 space-y-3">
-        {categories.map((cat) => {
-          const data = dataFor(cat);
-          const img = data?.imageUrl || null;
-          const position = data?.position || "right";
-          const size = data?.size || "auto";
-          const shape = data?.shape || "rect";
-          const layout = data?.layout || "beside";
-          const height = heightFor(cat);
-          const gap = gapFor(cat);
-          const focusY = focusFor(cat);
-          const catItems = itemsFor(cat);
-          const showFocusSlider =
-            layout === "overlay" && (shape === "circle" || shape === "oval");
-
-          return (
-            <li key={cat} className="rounded border border-char-800 p-3">
-              <div className="flex flex-wrap items-center gap-3">
-                {img ? (
-                  <Image
-                    src={img}
-                    alt={cat}
-                    width={56}
-                    height={56}
-                    className="h-14 w-14 flex-shrink-0 rounded object-cover"
-                  />
-                ) : (
-                  <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded bg-char-800 text-xs text-smoke-300">
-                    Sin foto
-                  </div>
-                )}
-
-                <p className="min-w-0 flex-1 truncate font-medium text-smoke-100">
-                  {cat}{" "}
-                  <span className="text-xs font-normal text-smoke-300">
-                    ({catItems.length} platos)
-                  </span>
-                </p>
-
-                <label className="cursor-pointer rounded border border-char-600 px-3 py-1 text-sm text-smoke-300 hover:border-ember-500">
-                  {uploadingCat === cat
-                    ? "Subiendo…"
-                    : img
-                    ? "Cambiar"
-                    : "Agregar foto"}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    disabled={uploadingCat === cat}
-                    onChange={(e) => handleFile(cat, e.target.files?.[0])}
-                  />
-                </label>
-
-                {img && (
-                  <>
-                    <button
-                      onClick={() => togglePosition(cat)}
-                      className="rounded border border-char-600 px-3 py-1 text-sm text-smoke-300 hover:border-ember-500"
-                      title="Cambiar de lado"
-                    >
-                      {position === "left" ? "◧ Izquierda" : "◨ Derecha"}
-                    </button>
-                    <select
-                      value={size === "custom" ? "auto" : size}
-                      onChange={(e) => changePreset(cat, e.target.value)}
-                      className="rounded border border-char-600 bg-char-800 px-2 py-1 text-sm text-smoke-300"
-                    >
-                      {SIZES.map((s) => (
-                        <option key={s.value} value={s.value}>
-                          {s.label}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      value={shape}
-                      onChange={(e) => changeShape(cat, e.target.value)}
-                      className="rounded border border-char-600 bg-char-800 px-2 py-1 text-sm text-smoke-300"
-                    >
-                      {SHAPES.map((s) => (
-                        <option key={s.value} value={s.value}>
-                          {s.label}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      value={layout}
-                      onChange={(e) => changeLayout(cat, e.target.value)}
-                      className="rounded border border-char-600 bg-char-800 px-2 py-1 text-sm text-smoke-300"
-                    >
-                      {LAYOUTS.map((l) => (
-                        <option key={l.value} value={l.value}>
-                          {l.label}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() =>
-                        setPreviewCat(previewCat === cat ? null : cat)
-                      }
-                      className="rounded border border-char-600 px-3 py-1 text-sm text-smoke-300 hover:border-ember-500"
-                    >
-                      {previewCat === cat ? "Ocultar vista previa" : "Vista previa"}
-                    </button>
-                    <button
-                      onClick={() => handleRemove(cat)}
-                      className="rounded border border-ember-700 px-3 py-1 text-sm text-ember-400 hover:bg-ember-700/20"
-                    >
-                      Quitar
-                    </button>
-                  </>
-                )}
-              </div>
-
-              {img && previewCat === cat && (
-                <div className="mt-4 rounded-lg border border-char-700 bg-char-950 p-4">
-                  <div className="mb-3 flex items-center gap-3">
-                    <span className="text-xs text-smoke-300">
-                      Tamaño de la foto
-                    </span>
-                    <input
-                      type="range"
-                      min={CATEGORY_IMAGE_HEIGHT_RANGE.min}
-                      max={CATEGORY_IMAGE_HEIGHT_RANGE.max}
-                      step={4}
-                      value={height}
-                      onChange={(e) => handleSlider(cat, e.target.value)}
-                      className="h-1.5 flex-1 accent-ember-600"
-                    />
-                    <span className="w-12 text-right text-xs text-smoke-300">
-                      {height}px
-                    </span>
-                  </div>
-
-                  <div className="mb-3 flex items-center gap-3">
-                    <span className="text-xs text-smoke-300">
-                      Separación del texto
-                    </span>
-                    <input
-                      type="range"
-                      min={CATEGORY_IMAGE_GAP_RANGE.min}
-                      max={CATEGORY_IMAGE_GAP_RANGE.max}
-                      step={2}
-                      value={gap}
-                      onChange={(e) => handleGapSlider(cat, e.target.value)}
-                      className="h-1.5 flex-1 accent-ember-600"
-                    />
-                    <span className="w-12 text-right text-xs text-smoke-300">
-                      {gap}px
-                    </span>
-                  </div>
-
-                  {showFocusSlider && (
-                    <div className="mb-3 flex items-center gap-3">
-                      <span className="text-xs text-smoke-300">
-                        Posición del área libre
-                      </span>
-                      <input
-                        type="range"
-                        min={10}
-                        max={90}
-                        step={2}
-                        value={focusY}
-                        onChange={(e) => handleFocusSlider(cat, e.target.value)}
-                        className="h-1.5 flex-1 accent-ember-600"
-                      />
-                      <span className="w-20 text-right text-xs text-smoke-300">
-                        {focusY < 40 ? "Arriba" : focusY > 60 ? "Abajo" : "Centro"}
-                      </span>
-                    </div>
-                  )}
-
-                  <CategoryImageBlock
-                    imageUrl={img}
-                    alt={cat}
-                    shape={shape}
-                    height={height}
-                    position={position}
-                    gap={gap}
-                    layout={layout}
-                    focusY={focusY}
-                  >
-                    <ul className="divide-y divide-char-800/80 text-sm">
-                      {catItems.length === 0 && (
-                        <li className="py-2 text-smoke-300">
-                          Esta categoría todavía no tiene platos.
-                        </li>
-                      )}
-                      {catItems.map((item) => (
-                        <li
-                          key={item.id}
-                          className="flex items-baseline gap-2 py-2"
-                        >
-                          <span className="text-smoke-100">{item.name}</span>
-                          <span className="flex-1 border-b border-dotted border-char-600" />
-                          <span className="whitespace-nowrap text-ember-400">
-                            {formatCLP(item.price)}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </CategoryImageBlock>
-                </div>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+  return <section className="category-editor-card" aria-label={category}>
+    <div className="category-editor-summary">
+      {data?.imageUrl ? <Image src={data.imageUrl} alt="" width={56} height={56} className="category-editor-thumbnail" />
+        : <span className="category-editor-placeholder" aria-hidden="true">＋</span>}
+      <div className="min-w-0 flex-1"><h3>{category}</h3><p>{items.length} {items.length === 1 ? "plato visible" : "platos visibles"}{dirty ? " · Cambios sin guardar" : data?.imageUrl ? " · Con imagen" : ""}</p></div>
+      <button type="button" onClick={onToggle} aria-expanded={expanded} aria-controls={inputId + "-editor"}
+        className="image-secondary">{expanded ? "Cerrar editor" : data?.imageUrl ? "Editar imagen" : "Agregar imagen"}</button>
     </div>
-  );
+    {expanded && <div id={inputId + "-editor"} className="category-editor-body">
+      <fieldset disabled={saving} className="image-editor-grid">
+        <legend className="sr-only">Imagen de {category}</legend>
+        <div className="image-editor-fields">
+          <div className="image-upload">
+            <label htmlFor={inputId} className="image-field-label">{imageUrl ? "Cambiar imagen" : "Elige una imagen"}</label>
+            <input id={inputId} type="file" accept={IMAGE_ACCEPT} onChange={selectFile} />
+            <p>JPG, PNG, WebP, AVIF o GIF · Máximo 10 MB.</p>
+            {file && <p>{file.name}</p>}
+            {(imageUrl || file) && <button type="button" className="image-text-button" onClick={() => {
+              setFile(null); uploaded.current = null;
+              if (data?.imageUrl) setRemoved(true);
+              else setDraft(resolveCategoryImage(null));
+            }}>Quitar imagen</button>}
+            {removed && <p>La imagen se retirará al guardar. Puedes deshacer el cambio.</p>}
+          </div>
+          <ImageRange label="Oscurecer el fondo" value={draft.overlayShade} min={60} max={90}
+            onChange={(value) => update("overlayShade", value)} />
+          <ImageRange label="Encuadre horizontal" value={draft.imageFocusX} onChange={(value) => update("imageFocusX", value)} />
+          <ImageRange label="Encuadre vertical" value={draft.imageFocusY} onChange={(value) => update("imageFocusY", value)} />
+        </div>
+        <div className="image-editor-preview">
+          <div className="image-preview-toolbar"><span>Vista previa</span>
+            <div role="group" aria-label="Tamaño de la vista previa">
+              {[["desktop", "Escritorio"], ["mobile", "Móvil"]].map(([value, label]) => <button type="button" key={value}
+                aria-pressed={previewSize === value} onClick={() => setPreviewSize(value)}>{label}</button>)}
+            </div>
+          </div>
+          <div className="category-editor-preview" data-size={previewSize}>
+            <MenuSection category={category} items={items} image={imageUrl ? { ...draft, imageUrl } : null} preview />
+          </div>
+          <p className="image-preview-help">La foto cubre el fondo de toda la categoría. Ajusta el encuadre y el sombreado para que los nombres y precios se lean con claridad.</p>
+          {items.length === 0 && <p className="image-preview-help">Esta categoría todavía no tiene platos visibles para comprobar el texto.</p>}
+        </div>
+      </fieldset>
+      {error && <p role="alert" className="image-editor-error">{error}</p>}
+      <div className="image-editor-actions">
+        <p role="status">{saving ? "Guardando imagen…" : dirty ? "Tienes cambios sin guardar" : "Los cambios se publican al guardar"}</p>
+        <button type="button" onClick={reset} disabled={!dirty || saving} className="image-secondary">Deshacer</button>
+        <button type="button" onClick={save} disabled={!dirty || saving || (!file && !imageUrl && !removed)}
+          className="appearance-primary">{saving ? "Guardando…" : "Guardar imagen"}</button>
+      </div>
+    </div>}
+  </section>;
+}
+
+export default function AdminCategoryImages({ categories, categoryImages, items }) {
+  const [expanded, setExpanded] = useState(null);
+  if (!categories.length) return <p className="mt-6 text-sm text-smoke-300">Agrega primero un plato para crear una categoría y colocar su imagen.</p>;
+  return <div className="category-images-editor">
+    <div className="image-editor-heading"><p className="menu-eyebrow">Una imagen para cada sabor</p>
+      <h2>Las fotos también cuentan tu carta.</h2>
+      <p>Elige una foto de fondo para cada categoría y ajusta cómo se verá detrás de tus platos. Revisa el resultado antes de guardarlo.</p>
+    </div>
+    <div className="space-y-4">{categories.map((category) => <CategoryEditor key={category} category={category}
+      data={categoryImages.find((image) => image.id === category)}
+      items={items.filter((item) => !item.hidden && (item.category || "Otros") === category).sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity))}
+      expanded={expanded === category} onToggle={() => setExpanded((current) => current === category ? null : category)} />)}</div>
+  </div>;
 }

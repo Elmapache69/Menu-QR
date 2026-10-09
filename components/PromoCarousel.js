@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import PromoSlide from "@/components/PromoSlide";
 
 const AUTO_ADVANCE_MS = 6500;
 
@@ -11,6 +12,8 @@ export default function PromoCarousel({ promos = [], motion = true }) {
   const [isDragging, setIsDragging] = useState(false);
   const [paused, setPaused] = useState(false);
   const [focused, setFocused] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [pageHidden, setPageHidden] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const trackRef = useRef(null);
   const timerRef = useRef(null);
@@ -25,15 +28,22 @@ export default function PromoCarousel({ promos = [], motion = true }) {
   }, []);
 
   useEffect(() => {
+    const sync = () => setPageHidden(document.hidden);
+    document.addEventListener("visibilitychange", sync);
+    sync();
+    return () => document.removeEventListener("visibilitychange", sync);
+  }, []);
+
+  useEffect(() => {
     if (index >= promos.length) setIndex(0);
   }, [promos.length, index]);
 
   const restartTimer = useCallback(() => {
     clearInterval(timerRef.current);
-    if (promos.length > 1 && motion && !reducedMotion && !paused && !focused) {
+    if (promos.length > 1 && motion && !reducedMotion && !paused && !focused && !hovered && !pageHidden && !isDragging) {
       timerRef.current = setInterval(() => setIndex((current) => (current + 1) % promos.length), AUTO_ADVANCE_MS);
     }
-  }, [promos.length, motion, reducedMotion, paused, focused]);
+  }, [promos.length, motion, reducedMotion, paused, focused, hovered, pageHidden, isDragging]);
 
   useEffect(() => {
     restartTimer();
@@ -76,42 +86,43 @@ export default function PromoCarousel({ promos = [], motion = true }) {
   return (
     <section className="menu-container promo-section" aria-label="Promociones y eventos"
       aria-roledescription="carrusel" onFocusCapture={() => setFocused(true)}
+      tabIndex={0} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+      onKeyDown={(event) => {
+        if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
+          event.preventDefault();
+          goTo(currentIndex + (event.key === "ArrowRight" ? 1 : -1));
+        }
+      }}
       onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}>
       <div className="mb-3 flex items-center gap-3">
         <p className="menu-eyebrow">Promociones & encuentros</p>
         <div className="ember-rule flex-1" />
         <span className="promo-position">{String(currentIndex + 1).padStart(2, "0")} / {String(promos.length).padStart(2, "0")}</span>
       </div>
-      <div ref={trackRef} className={`promo-surface relative w-full touch-pan-y select-none overflow-hidden${promos.some((promo) => promo.imageUrl) ? "" : " promo-text-only"}`}
+      <div ref={trackRef} className="promo-surface relative w-full touch-pan-y select-none overflow-hidden"
         onPointerDown={onPointerDown} onPointerMove={onPointerMove}
         onPointerUp={() => endDrag()} onPointerCancel={() => endDrag(true)}>
-        <div className="flex h-full" style={{
+        <div className="flex items-stretch" style={{
           width: `${promos.length * 100}%`,
           transform: `translateX(calc(${-currentIndex * (100 / promos.length)}% + ${dragPercent}%))`,
           transition: isDragging || !motion || reducedMotion ? "none" : "transform .65s cubic-bezier(.22, 1, .36, 1)",
         }}>
           {promos.map((promo, slideIndex) => (
-            <div key={promo.id} className="relative h-full flex-shrink-0" style={{ width: `${100 / promos.length}%` }}
+            <div key={promo.id} className="relative flex flex-shrink-0" style={{ width: `${100 / promos.length}%` }}
               role="group" aria-roledescription="diapositiva" aria-label={`${slideIndex + 1} de ${promos.length}`}
               aria-hidden={slideIndex !== currentIndex}>
-              {promo.imageUrl ? <Image src={promo.imageUrl} alt={promo.title || "Promoción"} fill draggable={false}
-                sizes="(max-width: 1152px) 100vw, 1088px" className="pointer-events-none object-cover" priority={slideIndex === 0} />
-                : <div className="h-full w-full bg-gradient-to-br from-ember-700 to-char-900" />}
-              <div className="promo-caption absolute inset-0" />
-              {(promo.title || promo.description) && <div className="promo-slide-content">
-                {promo.title && <h2 className="promo-title">{promo.title}</h2>}
-                {promo.description && <p className="promo-copy">{promo.description}</p>}
-              </div>}
+              <PromoSlide promo={promo} priority={slideIndex === 0} />
             </div>
           ))}
         </div>
       </div>
       {promos.length > 1 && <div className="promo-controls">
-        <div className="flex items-center">
+        <div className="promo-thumbnails scrollbar-none">
           {promos.map((promo, slideIndex) => <button type="button" key={promo.id} onClick={() => goTo(slideIndex)}
             aria-label={`Ver promoción ${slideIndex + 1}`} aria-current={slideIndex === currentIndex ? "true" : undefined}
-            className="flex h-10 min-w-8 items-center justify-center">
-            <span className={`h-1.5 rounded-full transition-all ${slideIndex === currentIndex ? "w-5 bg-ember-400" : "w-1.5 bg-char-600"}`} />
+            className="promo-thumbnail">
+            {promo.imageUrl ? <Image src={promo.imageUrl} alt="" width={64} height={44} className="h-full w-full object-cover" />
+              : <span>{String(slideIndex + 1).padStart(2, "0")}</span>}
           </button>)}
         </div>
         <div className="flex items-center gap-1">

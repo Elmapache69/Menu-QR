@@ -115,7 +115,7 @@ function AdminPageInner() {
   }
 
   const existingCategories = Array.from(
-    new Set(items.map((i) => i.category).filter(Boolean))
+    new Set(items.map((i) => i.category || "Otros"))
   );
 
   return (
@@ -135,7 +135,7 @@ function AdminPageInner() {
         </div>
       </header>
 
-      <div className={`mx-auto px-4 sm:px-6 ${tab === "theme" ? "max-w-5xl" : "max-w-3xl"}`}>
+      <div className={`mx-auto px-4 sm:px-6 ${tab !== "items" ? "max-w-5xl" : "max-w-3xl"}`}>
         <div className="mt-6 flex items-center justify-between">
           <a href="/" className="text-sm text-smoke-300 hover:text-ember-400">
             ← Ver carta pública
