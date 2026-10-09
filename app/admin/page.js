@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -22,6 +23,9 @@ import AdminCategoryImages from "@/components/AdminCategoryImages";
 import AdminTheme from "@/components/AdminTheme";
 import { ToastProvider } from "@/components/Toast";
 import { sortCategories } from "@/lib/format";
+import { resolveAppearance } from "@/lib/appearance";
+
+const RESTAURANT_NAME = process.env.NEXT_PUBLIC_RESTAURANT_NAME || "Rincón El Sauce";
 
 export default function AdminPage() {
   return (
@@ -44,7 +48,9 @@ function AdminPageInner() {
   const [editingPromo, setEditingPromo] = useState(null);
 
   const [categoryImages, setCategoryImages] = useState([]);
-  const [theme, setTheme] = useState("default");
+  const [appearance, setAppearance] = useState(() => resolveAppearance());
+  const [appearanceLoaded, setAppearanceLoaded] = useState(false);
+  const [appearanceError, setAppearanceError] = useState("");
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, setUser);
@@ -73,9 +79,20 @@ function AdminPageInner() {
       }
     );
 
-    const unsubTheme = onSnapshot(doc(db, "settings", "general"), (snap) => {
-      setTheme(snap.data()?.theme || "default");
-    });
+    setAppearanceLoaded(false);
+    setAppearanceError("");
+    const unsubTheme = onSnapshot(doc(db, "settings", "general"),
+      { includeMetadataChanges: true },
+      (snap) => {
+        if (snap.metadata.hasPendingWrites) return;
+        setAppearance(resolveAppearance(snap.data()));
+        setAppearanceLoaded(true);
+      },
+      (err) => {
+        console.error(err);
+        setAppearanceError("No pudimos cargar la apariencia actual. Recarga la página para volver a intentarlo.");
+      }
+    );
 
     return () => {
       unsubItems();
@@ -102,12 +119,13 @@ function AdminPageInner() {
   );
 
   return (
-    <main className="min-h-screen bg-char-950 pb-16">
+    <main className="admin-shell pb-16" data-theme="default">
       <header className="border-b border-char-700 bg-char-900 px-4 py-4">
-        <div className="mx-auto flex max-w-2xl items-center justify-between">
-          <h1 className="font-display text-2xl tracking-wide text-smoke-100">
-            Panel de administración
-          </h1>
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
+          <div className="admin-brand">
+            <Image src="/logo.png" alt="" width={40} height={40} />
+            <div><h1>Administración</h1><p>{RESTAURANT_NAME}</p></div>
+          </div>
           <button
             onClick={() => signOut(auth)}
             className="text-sm text-smoke-300 hover:text-ember-400"
@@ -117,55 +135,19 @@ function AdminPageInner() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-2xl px-4">
+      <div className={`mx-auto px-4 sm:px-6 ${tab === "theme" ? "max-w-5xl" : "max-w-3xl"}`}>
         <div className="mt-6 flex items-center justify-between">
           <a href="/" className="text-sm text-smoke-300 hover:text-ember-400">
             ← Ver carta pública
           </a>
         </div>
 
-        <div className="mt-4 flex gap-2 border-b border-char-800">
-          <button
-            onClick={() => setTab("items")}
-            className={`border-b-2 px-3 py-2 text-sm font-medium ${
-              tab === "items"
-                ? "border-ember-500 text-ember-400"
-                : "border-transparent text-smoke-300 hover:text-smoke-100"
-            }`}
-          >
-            Platos
-          </button>
-          <button
-            onClick={() => setTab("promos")}
-            className={`border-b-2 px-3 py-2 text-sm font-medium ${
-              tab === "promos"
-                ? "border-ember-500 text-ember-400"
-                : "border-transparent text-smoke-300 hover:text-smoke-100"
-            }`}
-          >
-            Promociones y eventos
-          </button>
-          <button
-            onClick={() => setTab("categoryImages")}
-            className={`border-b-2 px-3 py-2 text-sm font-medium ${
-              tab === "categoryImages"
-                ? "border-ember-500 text-ember-400"
-                : "border-transparent text-smoke-300 hover:text-smoke-100"
-            }`}
-          >
-            Fotos de categoría
-          </button>
-          <button
-            onClick={() => setTab("theme")}
-            className={`border-b-2 px-3 py-2 text-sm font-medium ${
-              tab === "theme"
-                ? "border-ember-500 text-ember-400"
-                : "border-transparent text-smoke-300 hover:text-smoke-100"
-            }`}
-          >
-            Apariencia
-          </button>
-        </div>
+        <nav className="admin-tabs scrollbar-none" aria-label="Secciones de administración">
+          {[["items", "Platos"], ["promos", "Promociones"], ["categoryImages", "Fotos de categoría"], ["theme", "Apariencia"]].map(([value, label]) => (
+            <button type="button" key={value} onClick={() => setTab(value)}
+              aria-pressed={tab === value} className="admin-tab">{label}</button>
+          ))}
+        </nav>
 
         {tab === "items" && (
           <>
@@ -186,6 +168,7 @@ function AdminPageInner() {
             {showItemForm && (
               <div className="mt-4">
                 <AdminItemForm
+                  key={editingItem?.id || "new"}
                   editingItem={editingItem}
                   existingCategories={existingCategories}
                   onDone={() => {
@@ -229,6 +212,7 @@ function AdminPageInner() {
             {showPromoForm && (
               <div className="mt-4">
                 <AdminPromoForm
+                  key={editingPromo?.id || "new"}
                   editingPromo={editingPromo}
                   onDone={() => {
                     setShowPromoForm(false);
@@ -256,7 +240,8 @@ function AdminPageInner() {
           />
         )}
 
-        {tab === "theme" && <AdminTheme theme={theme} />}
+        {tab === "theme" && <AdminTheme appearance={appearance} items={items} categoryImages={categoryImages}
+          loaded={appearanceLoaded} loadError={appearanceError} />}
       </div>
     </main>
   );
@@ -265,62 +250,63 @@ function AdminPageInner() {
 function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setError("");
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, email.trim(), password);
     } catch (err) {
-      setError("Correo o contraseña incorrectos.");
+      setError(err.code === "auth/network-request-failed"
+        ? "No pudimos conectarnos. Revisa tu conexión y vuelve a intentarlo."
+        : err.code === "auth/too-many-requests"
+          ? "Hubo varios intentos de ingreso. Espera unos minutos y vuelve a intentarlo."
+          : "No pudimos ingresar. Revisa tu correo y contraseña.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-char-950 px-4">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-sm space-y-4 rounded-lg border border-char-700 bg-char-900 p-6"
-      >
-        <h1 className="font-display text-2xl tracking-wide text-ember-400">
-          Ingreso administración
-        </h1>
-        <div>
-          <label className="mb-1 block text-sm text-smoke-300">Correo</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded border border-char-600 bg-char-800 px-3 py-2 text-smoke-100 focus:border-ember-500"
-            required
-          />
+    <main className="admin-login" data-theme="default">
+      <div className="login-layout">
+        <div className="login-brand">
+          <div className="login-brand-logo">
+            <Image src="/logo.png" alt="" width={52} height={52} priority />
+            <span>{RESTAURANT_NAME}</span>
+          </div>
+          <h1>La carta de tu casa,<br /><em>en tus manos.</em></h1>
+          <p className="login-brand-description">Cuida cada detalle de tu carta: los platos, las fotografías y el estilo que recibe a tus clientes.</p>
+          <a href="/" className="login-back"><span aria-hidden="true">←</span> Volver a la carta</a>
         </div>
-        <div>
-          <label className="mb-1 block text-sm text-smoke-300">
-            Contraseña
-          </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded border border-char-600 bg-char-800 px-3 py-2 text-smoke-100 focus:border-ember-500"
-            required
-          />
-        </div>
-        {error && <p className="text-sm text-ember-400">{error}</p>}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded bg-ember-600 px-4 py-2 font-medium text-smoke-100 hover:bg-ember-500 disabled:opacity-50"
-        >
-          {loading ? "Ingresando…" : "Ingresar"}
-        </button>
-      </form>
+        <form onSubmit={handleSubmit} className="login-form" aria-labelledby="login-title" aria-busy={loading}>
+          <p className="menu-eyebrow">Administración</p>
+          <h2 id="login-title">Bienvenido de vuelta.</h2>
+          <p className="login-form-intro">Ingresa con tu cuenta para gestionar la carta.</p>
+          <label htmlFor="admin-email">Correo electrónico</label>
+          <input id="admin-email" name="email" type="email" autoComplete="username" value={email}
+            onChange={(event) => { setEmail(event.target.value); setError(""); }}
+            placeholder="tu@correo.cl" required disabled={loading} />
+          <label htmlFor="admin-password">Contraseña</label>
+          <div className="login-password">
+            <input id="admin-password" name="password" type={showPassword ? "text" : "password"}
+              autoComplete="current-password" value={password}
+              onChange={(event) => { setPassword(event.target.value); setError(""); }}
+              required disabled={loading} />
+            <button type="button" aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+              aria-controls="admin-password" aria-pressed={showPassword}
+              onClick={() => setShowPassword(!showPassword)}>{showPassword ? "Ocultar" : "Mostrar"}</button>
+          </div>
+          {error && <p role="alert" className="login-error">{error}</p>}
+          <button type="submit" disabled={loading} className="appearance-primary login-submit">
+            {loading ? "Ingresando…" : "Ingresar al panel"}
+          </button>
+        </form>
+      </div>
     </main>
   );
 }

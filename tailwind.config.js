@@ -8,11 +8,11 @@ module.exports = {
     extend: {
       colors: {
         char: {
-          950: "#0f0d0b",
-          900: "#161310",
-          800: "#1f1b17",
-          700: "#2b2521",
-          600: "#3d3530",
+          950: "rgb(var(--char-950) / <alpha-value>)",
+          900: "rgb(var(--char-900) / <alpha-value>)",
+          800: "rgb(var(--char-800) / <alpha-value>)",
+          700: "rgb(var(--char-700) / <alpha-value>)",
+          600: "rgb(var(--char-600) / <alpha-value>)",
         },
         // Colores "ember" controlados por variables CSS (ver globals.css)
         // para poder cambiar de tema (Halloween, Navidad, Fiestas
@@ -24,9 +24,9 @@ module.exports = {
           700: "rgb(var(--ember-700) / <alpha-value>)",
         },
         smoke: {
-          100: "#f4ede1",
-          300: "#d9cdbb",
-          500: "#a9998861",
+          100: "rgb(var(--smoke-100) / <alpha-value>)",
+          300: "rgb(var(--smoke-300) / <alpha-value>)",
+          500: "rgb(var(--smoke-500) / <alpha-value>)",
         },
       },
       fontFamily: {

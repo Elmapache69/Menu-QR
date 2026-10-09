@@ -139,18 +139,28 @@ Abre `http://localhost:3000` (carta) y `http://localhost:3000/admin`
     ("Posición del área libre") permite mover arriba/abajo la zona
     donde se ve la foto sin texto encima, para calzarla con dónde
     aparece el plato en tu foto.
-  - **Apariencia**: cambia los colores de acento de toda la carta según
-    la fecha — Normal, 🎃 Halloween, 🎄 Navidad o 🇨🇱 Fiestas Patrias. El
-    resto del diseño (fotos, orden de platos, fondo oscuro) no cambia,
-    los tonos destacados, el tinte del fondo y el humo. Además cada modo
-    tiene su decoración: telarañas y una arañita en Halloween, una
-    guirnalda de luces con copos de nieve en Navidad, y banderines
-    rojo-blanco-azul en Fiestas Patrias.
+  - **Apariencia**: elige entre Cobre & carbón, Olivo, Reserva, Halloween,
+    Navidad y Fiestas Patrias. Cada paleta combina fondo, texto, bordes y
+    acentos. La vista previa permite elegir una categoría de platos visibles
+    (o muestra ejemplos identificados si la carta está vacía). Puedes ajustar el
+    espacio entre platos, activar las decoraciones de temporada y reducir
+    el movimiento. Pulsa **Guardar apariencia** para publicar o **Deshacer**
+    para volver a la configuración guardada. Elegir una muestra no publica
+    cambios. Las preferencias se guardan en `settings/general`, conservando
+    el campo `theme` de las versiones anteriores y agregando `appearance`.
+    Las preferencias de movimiento reducido del dispositivo se respetan
+    incluso cuando el movimiento está activado en el panel.
 - Para agregar más administradores, créales un usuario en
   **Authentication → Users** dentro de Firebase.
 - **Buscador** en la carta pública (ícono de lupa junto al nombre):
   filtra los platos por nombre o descripción, sin distinguir
   mayúsculas ni tildes.
+- **Navegación**: índice lateral en escritorio y categorías desplazables
+  en móvil. El acceso «Explorar la carta» lleva directamente a los platos.
+- **Fotografías**: toca la foto de un plato para ampliarla y ver su precio
+  y descripción. Se cierra con el botón, tocando fuera o presionando Escape.
+  La portada usa la primera foto disponible de un plato visible o de sus
+  categorías; cuando no hay fotos, muestra un sello decorativo.
 - Al compartir el link de la carta (WhatsApp, Instagram, etc.) se
   muestra tu logo y nombre — para que funcione bien, define
   `NEXT_PUBLIC_SITE_URL` en Vercel con la URL real ya publicada.
@@ -180,6 +190,9 @@ components/
   AdminPromoForm.js      → formulario agregar/editar promoción o evento
   AdminPromoList.js       → listado de promociones, con ocultar/editar/eliminar
   PromoCarousel.js         → carrusel público de promociones/eventos
+  MenuIntro.js              → portada compartida con la vista previa
+  MenuSection.js            → categorías y platos de la carta
+  MenuPhoto.js              → fotografías ampliables con diálogo accesible
   FlameIcon.js              → ícono de marca reutilizado en toda la app
 lib/
   firebase.js           → conexión a Firestore y Authentication

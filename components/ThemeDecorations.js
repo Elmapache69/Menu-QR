@@ -111,21 +111,19 @@ function Bunting() {
 export default function ThemeDecorations({ theme }) {
   if (theme === "halloween") {
     return (
-      <div className="pointer-events-none fixed inset-0 z-[-1] overflow-hidden">
+      <div className="theme-decorations" aria-hidden="true">
         <div className="absolute -top-2 -left-2 h-40 w-40 sm:h-56 sm:w-56">
           <Cobweb className="h-full w-full" />
           <Spider />
         </div>
         <Cobweb className="absolute -top-2 -right-2 h-32 w-32 -scale-x-100 sm:h-48 sm:w-48" />
-        <Cobweb className="absolute -bottom-2 -left-2 h-28 w-28 -scale-y-100 sm:h-40 sm:w-40" />
-        <Cobweb className="absolute -bottom-2 -right-2 h-32 w-32 -scale-x-100 -scale-y-100 sm:h-48 sm:w-48" />
       </div>
     );
   }
 
   if (theme === "christmas") {
     return (
-      <div className="pointer-events-none fixed inset-x-0 top-0 z-[-1]">
+      <div className="theme-decorations" aria-hidden="true">
         <Garland />
         <Snowflake className="absolute left-[8%] top-12 h-5 w-5" />
         <Snowflake className="absolute right-[12%] top-24 h-4 w-4" />
@@ -136,7 +134,7 @@ export default function ThemeDecorations({ theme }) {
 
   if (theme === "fiestasPatrias") {
     return (
-      <div className="pointer-events-none fixed inset-x-0 top-0 z-[-1]">
+      <div className="theme-decorations" aria-hidden="true">
         <Bunting />
       </div>
     );

@@ -19,7 +19,7 @@ export function ToastProvider({ children }) {
       {children}
       <div
         aria-live="polite"
-        className="pointer-events-none fixed inset-x-0 bottom-5 z-50 flex justify-center px-4"
+        className="pointer-events-none fixed inset-x-0 top-5 z-50 flex justify-center px-4"
       >
         {toast && (
           <div
