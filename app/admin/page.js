@@ -155,8 +155,8 @@ export default function AdminPage() {
         {tab === "promos" && (
           <>
             <p className="mt-4 text-sm text-smoke-300">
-              Aparecen como un carrusel arriba de la carta pública. Úsalas
-              para 2x1, cumpleaños, fiestas patrias, partidos, etc.
+              Publica ofertas, eventos y novedades en el carrusel de la carta.
+              Agrega una imagen o afiche, revisa la vista previa y guarda para publicar.
             </p>
             <div className="mt-4 flex justify-end">
               {!showPromoForm && (
@@ -167,7 +167,7 @@ export default function AdminPage() {
                   }}
                   className="rounded bg-ember-600 px-4 py-2 font-medium text-smoke-100 hover:bg-ember-500"
                 >
-                  + Agregar promoción
+                  + Agregar publicación
                 </button>
               )}
             </div>
@@ -175,6 +175,7 @@ export default function AdminPage() {
             {showPromoForm && (
               <div className="mt-4">
                 <AdminPromoForm
+                  key={editingPromo?.id || "new"}
                   editingPromo={editingPromo}
                   onDone={() => {
                     setShowPromoForm(false);

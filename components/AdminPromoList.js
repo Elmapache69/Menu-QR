@@ -1,30 +1,58 @@
 "use client";
 
 import Image from "next/image";
+import { useState } from "react";
 import { deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import FlameIcon from "@/components/FlameIcon";
+import { getPromoType } from "@/lib/promotions";
 
 export default function AdminPromoList({ promos, onEdit }) {
+  const [pendingId, setPendingId] = useState(null);
+  const [error, setError] = useState("");
   const handleDelete = async (promo) => {
+    if (pendingId) return;
     if (!confirm(`¿Eliminar la promoción "${promo.title || "sin título"}"?`))
       return;
-    await deleteDoc(doc(db, "promos", promo.id));
+    setPendingId(promo.id);
+    setError("");
+    try {
+      await deleteDoc(doc(db, "promos", promo.id));
+    } catch (err) {
+      console.error(err);
+      setError("No pudimos eliminar la publicación. Inténtalo de nuevo.");
+    } finally {
+      setPendingId(null);
+    }
   };
 
   const toggleActive = async (promo) => {
-    await updateDoc(doc(db, "promos", promo.id), { active: !promo.active });
+    if (pendingId) return;
+    setPendingId(promo.id);
+    setError("");
+    try {
+      await updateDoc(doc(db, "promos", promo.id), { active: promo.active === false });
+    } catch (err) {
+      console.error(err);
+      setError("No pudimos cambiar la visibilidad. Inténtalo de nuevo.");
+    } finally {
+      setPendingId(null);
+    }
   };
 
   if (promos.length === 0) {
     return (
-      <p className="mt-6 text-sm text-smoke-300">
-        Todavía no hay promociones ni eventos cargados.
-      </p>
+      <div className="promo-admin-empty">
+        <FlameIcon className="h-6 w-6 text-ember-400" />
+        <p>Todavía no hay publicaciones en el carrusel.</p>
+        <p>Usa «Agregar publicación» para crear tu primera oferta, evento o novedad.</p>
+      </div>
     );
   }
 
   return (
+    <>
+    {error && <p role="alert" className="promo-editor-error">{error}</p>}
     <ul className="mt-6 space-y-2">
       {promos.map((promo) => (
         <li
@@ -48,20 +76,21 @@ export default function AdminPromoList({ promos, onEdit }) {
             <p className="truncate font-medium text-smoke-100">
               {promo.title || "(Sin título)"}
             </p>
+            <p className="text-xs text-smoke-300">{getPromoType(promo.type).label}</p>
             <span
               className={`text-xs ${
-                promo.active ? "text-ember-400" : "text-smoke-300"
+                promo.active !== false ? "text-ember-400" : "text-smoke-300"
               }`}
             >
-              {promo.active ? "Visible en la carta" : "Oculta"}
+              {promo.active !== false ? "Visible en la carta" : "Oculta"}
             </span>
           </div>
-          <div className="flex flex-shrink-0 gap-2">
+          <fieldset disabled={pendingId !== null} className="flex flex-shrink-0 flex-wrap gap-2 disabled:opacity-50" aria-label={`Acciones de ${promo.title || "publicación"}`}>
             <button
               onClick={() => toggleActive(promo)}
               className="rounded border border-char-600 px-3 py-1 text-sm text-smoke-300 hover:border-ember-500"
             >
-              {promo.active ? "Ocultar" : "Mostrar"}
+              {promo.active !== false ? "Ocultar" : "Mostrar"}
             </button>
             <button
               onClick={() => onEdit(promo)}
@@ -75,9 +104,10 @@ export default function AdminPromoList({ promos, onEdit }) {
             >
               Eliminar
             </button>
-          </div>
+          </fieldset>
         </li>
       ))}
     </ul>
+    </>
   );
 }

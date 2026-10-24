@@ -102,6 +102,16 @@ Abre `http://localhost:3000` (carta) y `http://localhost:3000/admin`
 
 - **Carta pública** (`/`): se actualiza sola en cuanto se guarda un
   cambio en el panel — no hay que volver a desplegar nada.
+  Debajo del carrusel está el selector **Elige tu categoría**, enmarcado y
+  con la categoría seleccionada en dorado. Una lupa circular fija en la
+  esquina inferior izquierda abre el buscador, que filtra
+  por nombre, descripción o categoría sin distinguir mayúsculas ni tildes;
+  solo busca platos visibles. Puedes limpiar el campo o cerrar el buscador
+  con su botón de cierre o Escape para volver a ver todos los platos.
+  Los títulos de categoría conservan el estilo original con llama y línea de brasa.
+  Al dejar atrás las categorías aparece **Volver al inicio** abajo a la derecha,
+  que regresa a ese punto de la carta. El carrusel utiliza puntos como
+  indicadores, manteniendo las flechas internas y el avance automático.
 - **Panel** (`/admin`): inicia sesión con el correo/contraseña creado en
   el paso 1.4. Tiene dos pestañas:
   - **Platos**: agrega/edita/elimina platos (nombre, descripción, precio,
@@ -110,10 +120,20 @@ Abre `http://localhost:3000` (carta) y `http://localhost:3000/admin`
     carta. Cada plato tiene un botón **"Ocultar"** para sacarlo
     momentáneamente de la carta pública sin borrarlo — útil para platos
     de temporada o de una ocasión especial. "Mostrar" lo vuelve a activar.
-  - **Promociones y eventos**: título, descripción e imagen opcional.
-    Aparecen como un carrusel arriba de la carta pública (2x1, cumpleaños,
-    partidos, fiestas patrias, etc.). El botón "Ocultar/Mostrar" controla
-    si están visibles sin necesidad de borrarlas.
+  - **Promociones y eventos**: usa **Agregar publicación** para crear una
+    oferta, evento o novedad con título, descripción e imagen opcional.
+    Revisa la vista previa antes de guardar. El carrusel mantiene su tamaño
+    al cambiar de publicación: las imágenes se ajustan completas a un espacio
+    de proporción fija, sin recortarse ni mover los platos de la carta. Se admiten
+    JPG, PNG, WebP, AVIF y GIF de hasta 10 MB; las imágenes se suben al guardar.
+    El carrusel aparece sobre los platos cuando hay publicaciones visibles.
+    Tiene flechas dentro de la imagen, indicadores, teclado y deslizamiento
+    en celular. Avanza automáticamente cada 6,5 segundos, también después
+    de usar las flechas o deslizar. El gesto en curso, salir de pantalla o
+    cambiar de pestaña suspenden temporalmente el avance; respeta la
+    preferencia de movimiento reducido del dispositivo.
+    El botón **Ocultar/Mostrar** controla la visibilidad sin borrar publicaciones.
+    Las promociones existentes siguen funcionando y muestran la imagen completa.
 - Para agregar más administradores, créales un usuario en
   **Authentication → Users** dentro de Firebase.
 
@@ -136,9 +156,11 @@ components/
   AdminPromoForm.js      → formulario agregar/editar promoción o evento
   AdminPromoList.js       → listado de promociones, con ocultar/editar/eliminar
   PromoCarousel.js         → carrusel público de promociones/eventos
+  PromoCard.js              → imagen y texto compartidos con la vista previa
   FlameIcon.js              → ícono de marca reutilizado en toda la app
 lib/
   firebase.js           → conexión a Firestore y Authentication
   cloudinary.js           → subida de imágenes a Cloudinary
   format.js                → formato de precios (CLP) y orden de categorías
+  promotions.js            → tipos de publicación y presentación de imágenes
 ```

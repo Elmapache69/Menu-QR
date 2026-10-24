@@ -1,109 +1,131 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
+import { useEffect, useId, useRef, useState } from "react";
+import PromoCard from "@/components/PromoCard";
 
-export default function PromoCarousel({ promos }) {
+const AUTO_ADVANCE_MS = 6500;
+
+export default function PromoCarousel({ promos = [] }) {
   const [index, setIndex] = useState(0);
-  const touchStartX = useRef(null);
-  const timerRef = useRef(null);
+  const [interaction, setInteraction] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const [pageHidden, setPageHidden] = useState(false);
+  const [visible, setVisible] = useState(true);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const sectionRef = useRef(null);
+  const pagesRef = useRef(null);
+  const gesture = useRef(null);
+  const headingId = useId();
+  const hasPromos = promos.length > 0;
+  const currentIndex = index < promos.length ? index : 0;
+  const canAutoplay = promos.length > 1 && !dragging && !pageHidden && visible && !reducedMotion;
+
+  useEffect(() => {
+    const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const syncMotion = () => setReducedMotion(preference.matches);
+    const syncVisibility = () => setPageHidden(document.hidden);
+    syncMotion();
+    syncVisibility();
+    preference.addEventListener("change", syncMotion);
+    document.addEventListener("visibilitychange", syncVisibility);
+    return () => {
+      preference.removeEventListener("change", syncMotion);
+      document.removeEventListener("visibilitychange", syncVisibility);
+    };
+  }, []);
 
   useEffect(() => {
     if (index >= promos.length) setIndex(0);
-  }, [promos.length, index]);
+  }, [index, promos.length]);
 
   useEffect(() => {
-    if (promos.length <= 1) return;
-    timerRef.current = setInterval(() => {
-      setIndex((i) => (i + 1) % promos.length);
-    }, 5000);
-    return () => clearInterval(timerRef.current);
-  }, [promos.length]);
+    if (!sectionRef.current) return;
+    const observer = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting));
+    observer.observe(sectionRef.current);
+    return () => observer.disconnect();
+  }, [hasPromos]);
 
-  if (!promos || promos.length === 0) return null;
+  useEffect(() => {
+    if (!canAutoplay) return;
+    const timer = setTimeout(() => setIndex((current) => (current + 1) % promos.length), AUTO_ADVANCE_MS);
+    return () => clearTimeout(timer);
+  }, [index, interaction, canAutoplay, promos.length]);
 
-  const resetTimer = () => {
-    clearInterval(timerRef.current);
-    if (promos.length > 1) {
-      timerRef.current = setInterval(() => {
-        setIndex((i) => (i + 1) % promos.length);
-      }, 5000);
+  useEffect(() => {
+    const pages = pagesRef.current;
+    const selected = pages?.querySelector('[aria-current="true"]');
+    if (!selected) return;
+    const bounds = pages.getBoundingClientRect();
+    const target = selected.getBoundingClientRect();
+    if (target.left < bounds.left || target.right > bounds.right) {
+      pages.scrollLeft += target.left - bounds.left - (pages.clientWidth - selected.clientWidth) / 2;
     }
-  };
+  }, [currentIndex]);
 
-  const goTo = (i) => {
-    setIndex(i);
-    resetTimer();
-  };
+  if (!hasPromos) return null;
 
-  const onTouchStart = (e) => {
-    touchStartX.current = e.touches[0].clientX;
+  const goTo = (next) => {
+    setIndex((next + promos.length) % promos.length);
+    setInteraction((current) => current + 1);
   };
-
-  const onTouchEnd = (e) => {
-    if (touchStartX.current === null) return;
-    const delta = e.changedTouches[0].clientX - touchStartX.current;
-    if (Math.abs(delta) > 40) {
-      if (delta < 0) goTo((index + 1) % promos.length);
-      else goTo((index - 1 + promos.length) % promos.length);
+  const endGesture = (event, cancelled = false) => {
+    if (!gesture.current || event.pointerId !== gesture.current.pointerId) return;
+    const deltaX = event.clientX - gesture.current.x;
+    const deltaY = event.clientY - gesture.current.y;
+    if (!cancelled && Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      goTo(currentIndex + (deltaX < 0 ? 1 : -1));
     }
-    touchStartX.current = null;
+    gesture.current = null;
+    setDragging(false);
   };
-
-  const promo = promos[index] || promos[0];
 
   return (
-    <div className="mx-auto mt-4 max-w-xl px-4 sm:px-5">
-      <div
-        className="relative aspect-[16/9] w-full overflow-hidden rounded-xl ring-1 ring-char-700"
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
-      >
-        {promo.imageUrl ? (
-          <Image
-            src={promo.imageUrl}
-            alt={promo.title || "Promoción"}
-            fill
-            sizes="(max-width: 640px) 100vw, 576px"
-            className="object-cover"
-            priority
-          />
-        ) : (
-          <div className="h-full w-full bg-gradient-to-br from-ember-700 to-char-900" />
-        )}
-
-        <div className="absolute inset-0 bg-gradient-to-t from-char-950/95 via-char-950/20 to-transparent" />
-
-        {(promo.title || promo.description) && (
-          <div className="absolute inset-x-0 bottom-0 p-4">
-            {promo.title && (
-              <h3 className="font-display text-2xl leading-none tracking-wide text-smoke-100">
-                {promo.title}
-              </h3>
-            )}
-            {promo.description && (
-              <p className="mt-1 text-sm text-smoke-300">
-                {promo.description}
-              </p>
-            )}
-          </div>
-        )}
+    <section ref={sectionRef} className="promo-carousel" aria-labelledby={headingId}
+      aria-roledescription="carrusel" tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
+          event.preventDefault();
+          goTo(currentIndex + (event.key === "ArrowRight" ? 1 : -1));
+        } else if (event.key === "Home" || event.key === "End") {
+          event.preventDefault();
+          goTo(event.key === "Home" ? 0 : promos.length - 1);
+        }
+      }}>
+      <div className="promo-carousel-heading">
+        <h2 id={headingId}>Ofertas y novedades</h2>
       </div>
-
-      {promos.length > 1 && (
-        <div className="mt-2 flex justify-center gap-1.5">
-          {promos.map((p, i) => (
-            <button
-              key={p.id}
-              onClick={() => goTo(i)}
-              aria-label={`Ver promoción ${i + 1}`}
-              className={`h-1.5 rounded-full transition-all ${
-                i === index ? "w-5 bg-ember-500" : "w-1.5 bg-char-700"
-              }`}
-            />
+      <div className="promo-viewport"
+        onPointerDown={(event) => {
+          if (promos.length < 2 || !event.isPrimary || event.button !== 0 || event.target.closest("button")) return;
+          gesture.current = { x: event.clientX, y: event.clientY, pointerId: event.pointerId };
+          setDragging(true);
+          event.currentTarget.setPointerCapture(event.pointerId);
+        }}
+        onPointerUp={(event) => endGesture(event)}
+        onPointerCancel={(event) => endGesture(event, true)}
+        onLostPointerCapture={(event) => endGesture(event, true)}>
+        <div className="promo-track" style={{ "--promo-index": currentIndex }} aria-live={canAutoplay ? "off" : "polite"} aria-atomic="false">
+          {promos.map((promo, slideIndex) => (
+            <div key={promo.id} className="promo-slide" role="group" aria-roledescription="diapositiva"
+              aria-label={`${slideIndex + 1} de ${promos.length}`} aria-hidden={slideIndex !== currentIndex}>
+              <PromoCard promo={promo} priority={slideIndex === 0} />
+            </div>
           ))}
         </div>
-      )}
-    </div>
+        {promos.length > 1 && <div className="promo-carousel-arrows">
+          <button type="button" className="promo-arrow promo-arrow-previous" onClick={() => goTo(currentIndex - 1)} aria-label="Publicación anterior">←</button>
+          <button type="button" className="promo-arrow promo-arrow-next" onClick={() => goTo(currentIndex + 1)} aria-label="Publicación siguiente">→</button>
+        </div>}
+      </div>
+      {promos.length > 1 && <div className="promo-carousel-footer">
+        <nav ref={pagesRef} className="promo-pages scrollbar-none" aria-label="Elegir publicación">
+          {promos.map((promo, slideIndex) => <button type="button" key={promo.id}
+            onClick={() => goTo(slideIndex)} aria-label={`Ver publicación ${slideIndex + 1}: ${promo.title || "Sin título"}`}
+            aria-current={slideIndex === currentIndex ? "true" : undefined}>
+            <span className="promo-dot" aria-hidden="true" />
+          </button>)}
+        </nav>
+      </div>}
+    </section>
   );
 }
