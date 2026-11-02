@@ -111,7 +111,7 @@ Abre `http://localhost:3000` (carta) y `http://localhost:3000/admin`
   Los títulos de categoría conservan el estilo original con llama y línea de brasa.
   Al dejar atrás las categorías aparece **Volver al inicio** abajo a la derecha,
   que regresa a ese punto de la carta. El carrusel utiliza puntos como
-  indicadores, manteniendo las flechas internas y el avance automático.
+  indicadores, con avance automático y sin flechas sobre las imágenes.
 - **Panel** (`/admin`): inicia sesión con el correo/contraseña creado en
   el paso 1.4. Tiene dos pestañas:
   - **Platos**: agrega/edita/elimina platos (nombre, descripción, precio,
@@ -127,9 +127,10 @@ Abre `http://localhost:3000` (carta) y `http://localhost:3000/admin`
     de proporción fija, sin recortarse ni mover los platos de la carta. Se admiten
     JPG, PNG, WebP, AVIF y GIF de hasta 10 MB; las imágenes se suben al guardar.
     El carrusel aparece sobre los platos cuando hay publicaciones visibles.
-    Tiene flechas dentro de la imagen, indicadores, teclado y deslizamiento
+    Las imágenes difuminan sus bordes con el fondo, manteniendo el centro nítido.
+    Tiene indicadores, teclado y deslizamiento
     en celular. Avanza automáticamente cada 6,5 segundos, también después
-    de usar las flechas o deslizar. El gesto en curso, salir de pantalla o
+    de elegir un indicador o deslizar. El gesto en curso, salir de pantalla o
     cambiar de pestaña suspenden temporalmente el avance; respeta la
     preferencia de movimiento reducido del dispositivo.
     El botón **Ocultar/Mostrar** controla la visibilidad sin borrar publicaciones.

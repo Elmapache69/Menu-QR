@@ -64,7 +64,27 @@ body {
 .promo-track { display: grid; grid-auto-flow: column; grid-auto-columns: 100%; align-items: stretch; transform: translateX(calc(var(--promo-index, 0) * -100%)); transition: transform .7s cubic-bezier(.32, .72, 0, 1); }
 .promo-slide { display: flex; min-width: 0; }
 .promo-card { display: flex; flex-direction: column; width: 100%; min-width: 0; background: #161310; }
-.promo-card-media { position: relative; aspect-ratio: 16 / 10; width: 100%; flex-shrink: 0; background: #131209; }
+.promo-card-media { container-type: size; position: relative; aspect-ratio: 16 / 10; width: 100%; flex-shrink: 0; background: #131209; }
+.promo-card-media, .promo-card-image {
+  --promo-fade: clamp(10px, 2vw, 20px);
+  --promo-edge-mask: linear-gradient(to right, transparent, #000 var(--promo-fade), #000 calc(100% - var(--promo-fade)), transparent),
+    linear-gradient(to bottom, transparent, #000 var(--promo-fade), #000 calc(100% - var(--promo-fade)), transparent);
+  -webkit-mask-image: var(--promo-edge-mask);
+  mask-image: var(--promo-edge-mask);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+/* El difuminado sigue el contorno real de la imagen, también en afiches verticales. */
+.promo-card-image {
+  --promo-mask-width: min(100cqw, calc(100cqh * var(--promo-image-ratio, 1)));
+  --promo-mask-height: min(100cqh, calc(100cqw / var(--promo-image-ratio, 1)));
+  -webkit-mask-size: var(--promo-mask-width) var(--promo-mask-height);
+  mask-size: var(--promo-mask-width) var(--promo-mask-height);
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
 .promo-card-image { display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none; user-select: none; }
 .promo-card-mark { aspect-ratio: 16 / 10; width: 100%; flex-shrink: 0; display: grid; place-items: center; color: #f2a93b; background: #131209; }
 .promo-card-copy { padding: 1rem; flex: 1; }
@@ -72,18 +92,13 @@ body {
 .promo-card-copy h3 { margin-top: .75rem; font-family: var(--font-display); font-size: 1.5rem; line-height: 2rem; font-weight: 400; letter-spacing: .025em; overflow-wrap: anywhere; text-wrap: balance; }
 .promo-card-description { margin-top: .5rem; max-width: 65ch; color: #d9cdbb; font-size: .875rem; line-height: 1.25rem; overflow-wrap: anywhere; white-space: pre-line; text-wrap: pretty; }
 .promo-carousel-footer { margin-top: .5rem; }
-.promo-carousel-arrows { position: absolute; z-index: 2; inset: 0 0 auto; aspect-ratio: 16 / 10; pointer-events: none; }
-.promo-arrow { position: absolute; top: 50%; transform: translateY(-50%); display: inline-grid; place-items: center; width: 48px; height: 48px; border: 1px solid #3d3530; border-radius: .5rem; background: #0f0d0be6; color: #f4ede1; font-size: 1.25rem; line-height: 1.75rem; pointer-events: auto; }
-.promo-arrow-previous { left: .5rem; }
-.promo-arrow-next { right: .5rem; }
 .promo-text-button { display: inline-flex; align-items: center; min-height: 48px; padding: .5rem .75rem; border-radius: .5rem; color: #f2a93b; font-size: .875rem; line-height: 1.25rem; font-weight: 500; }
 .promo-pages { display: flex; gap: .25rem; width: max-content; max-width: 100%; overflow-x: auto; margin: .5rem auto 0; padding: .25rem; }
 .promo-pages button { display: grid; place-items: center; flex-shrink: 0; width: 48px; height: 48px; border: 1px solid transparent; border-radius: .5rem; }
 .promo-dot { display: block; width: 8px; height: 8px; border-radius: 9999px; background: #3d3530; transition: width .3s cubic-bezier(.32, .72, 0, 1), background .3s cubic-bezier(.32, .72, 0, 1); }
 .promo-pages button[aria-current="true"] .promo-dot { width: 24px; background: #f2a93b; }
-.promo-arrow, .promo-text-button, .promo-pages button, .promo-primary, .promo-secondary { transition: background .3s cubic-bezier(.32, .72, 0, 1), border-color .3s cubic-bezier(.32, .72, 0, 1), transform .3s cubic-bezier(.32, .72, 0, 1); }
-.promo-arrow:hover, .promo-text-button:hover, .promo-pages button:hover, .promo-secondary:hover { background: #1f1b17; border-color: #f2a93b; }
-.promo-arrow:active { transform: translateY(-50%) scale(.98); }
+.promo-text-button, .promo-pages button, .promo-primary, .promo-secondary { transition: background .3s cubic-bezier(.32, .72, 0, 1), border-color .3s cubic-bezier(.32, .72, 0, 1), transform .3s cubic-bezier(.32, .72, 0, 1); }
+.promo-text-button:hover, .promo-pages button:hover, .promo-secondary:hover { background: #1f1b17; border-color: #f2a93b; }
 .promo-text-button:active, .promo-pages button:active, .promo-primary:active, .promo-secondary:active { transform: scale(.98); }
 .promo-editor { padding: 1rem; border: 1px solid #2b2521; border-radius: .75rem; background: #161310; }
 .promo-editor > h3 { color: #f2a93b; font-family: var(--font-display); font-size: 1.5rem; line-height: 2rem; letter-spacing: .025em; text-wrap: balance; }

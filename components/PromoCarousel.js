@@ -112,10 +112,6 @@ export default function PromoCarousel({ promos = [] }) {
             </div>
           ))}
         </div>
-        {promos.length > 1 && <div className="promo-carousel-arrows">
-          <button type="button" className="promo-arrow promo-arrow-previous" onClick={() => goTo(currentIndex - 1)} aria-label="Publicación anterior">←</button>
-          <button type="button" className="promo-arrow promo-arrow-next" onClick={() => goTo(currentIndex + 1)} aria-label="Publicación siguiente">→</button>
-        </div>}
       </div>
       {promos.length > 1 && <div className="promo-carousel-footer">
         <nav ref={pagesRef} className="promo-pages scrollbar-none" aria-label="Elegir publicación">
