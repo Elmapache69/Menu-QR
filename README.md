@@ -127,7 +127,8 @@ Abre `http://localhost:3000` (carta) y `http://localhost:3000/admin`
     de proporción fija, sin recortarse ni mover los platos de la carta. Se admiten
     JPG, PNG, WebP, AVIF y GIF de hasta 10 MB; las imágenes se suben al guardar.
     El carrusel aparece sobre los platos cuando hay publicaciones visibles.
-    Las imágenes difuminan sus bordes con el fondo, manteniendo el centro nítido.
+    Las imágenes se integran con el fondo de la página, sin recuadro ni fondo
+    de tarjeta, con los bordes difuminados y el centro nítido.
     Tiene indicadores, teclado y deslizamiento
     en celular. Avanza automáticamente cada 6,5 segundos, también después
     de elegir un indicador o deslizar. El gesto en curso, salir de pantalla o
