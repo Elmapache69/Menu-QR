@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { formatCLP, sortCategories } from "@/lib/format";
+import { formatCLP } from "@/lib/format";
+import { getOrderedCategories, itemCategory, sortMenuItems } from "@/lib/menu-order";
 import FlameIcon from "@/components/FlameIcon";
 import PromoCarousel from "@/components/PromoCarousel";
 
@@ -100,12 +101,13 @@ export default function MenuPage() {
   );
 
   const categories = useMemo(() => {
-    return sortCategories([...new Set(displayItems.map((item) => item.category || "Otros"))]);
-  }, [displayItems]);
+    const matches = new Set(displayItems.map(itemCategory));
+    return getOrderedCategories(items || []).filter((category) => matches.has(category));
+  }, [items, displayItems]);
 
   const grouped = useMemo(() => {
     const groups = new Map();
-    displayItems.forEach((item) => {
+    sortMenuItems(displayItems).forEach((item) => {
       const category = item.category || "Otros";
       if (!groups.has(category)) groups.set(category, []);
       groups.get(category).push(item);
@@ -212,7 +214,7 @@ export default function MenuPage() {
 
       {promosLoading && <div className="promo-carousel" role="status" aria-label="Cargando ofertas y novedades">
         <div className="animate-pulse space-y-3 rounded-xl border border-char-700 bg-char-900 p-4">
-          <div className="aspect-[16/10] rounded-lg bg-char-800" />
+          <div className="aspect-square rounded-lg bg-char-800 sm:aspect-[16/10]" />
           <div className="h-4 w-1/3 rounded bg-char-800" />
           <div className="h-6 w-2/3 rounded bg-char-800" />
         </div>

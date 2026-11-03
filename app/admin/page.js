@@ -12,6 +12,7 @@ import AdminItemForm from "@/components/AdminItemForm";
 import AdminItemList from "@/components/AdminItemList";
 import AdminPromoForm from "@/components/AdminPromoForm";
 import AdminPromoList from "@/components/AdminPromoList";
+import { getOrderedCategories } from "@/lib/menu-order";
 
 export default function AdminPage() {
   const [user, setUser] = useState(undefined); // undefined = cargando
@@ -63,9 +64,7 @@ export default function AdminPage() {
     return <LoginForm />;
   }
 
-  const existingCategories = Array.from(
-    new Set(items.map((i) => i.category).filter(Boolean))
-  );
+  const existingCategories = getOrderedCategories(items);
 
   return (
     <main className="min-h-screen bg-char-950 pb-16">
@@ -132,8 +131,10 @@ export default function AdminPage() {
             {showItemForm && (
               <div className="mt-4">
                 <AdminItemForm
+                  key={editingItem?.id || "new"}
                   editingItem={editingItem}
                   existingCategories={existingCategories}
+                  items={items}
                   onDone={() => {
                     setShowItemForm(false);
                     setEditingItem(null);

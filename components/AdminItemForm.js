@@ -2,15 +2,17 @@
 
 import { useState } from "react";
 import {
-  addDoc,
   collection,
   doc,
   serverTimestamp,
   updateDoc,
+  writeBatch,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { CATEGORY_ORDER } from "@/lib/format";
 import { uploadToCloudinary } from "@/lib/cloudinary";
+import { planItemPlacement } from "@/lib/menu-order";
+import { addMenuOrderChanges } from "@/lib/menu-order-store";
 
 const emptyForm = {
   name: "",
@@ -23,6 +25,7 @@ const emptyForm = {
 export default function AdminItemForm({
   editingItem,
   existingCategories,
+  items = [],
   onDone,
 }) {
   const [form, setForm] = useState(
@@ -41,7 +44,7 @@ export default function AdminItemForm({
   const [error, setError] = useState("");
 
   const categoryOptions = Array.from(
-    new Set([...CATEGORY_ORDER, ...existingCategories])
+    new Set([...existingCategories, ...CATEGORY_ORDER])
   );
 
   const handleSubmit = async (e) => {
@@ -70,13 +73,17 @@ export default function AdminItemForm({
         imageUrl,
       };
 
-      if (editingItem) {
+      if (editingItem && payload.category === editingItem.category) {
         await updateDoc(doc(db, "items", editingItem.id), payload);
       } else {
-        await addDoc(collection(db, "items"), {
-          ...payload,
-          createdAt: serverTimestamp(),
-        });
+        const placement = planItemPlacement(items, payload.category, editingItem?.id);
+        const batch = writeBatch(db);
+        addMenuOrderChanges(batch, placement.changes, 1);
+        payload.order = placement.order;
+        if (placement.categoryOrder !== undefined) payload.categoryOrder = placement.categoryOrder;
+        if (editingItem) batch.update(doc(db, "items", editingItem.id), payload);
+        else batch.set(doc(collection(db, "items")), { ...payload, createdAt: serverTimestamp() });
+        await batch.commit();
       }
 
       onDone();

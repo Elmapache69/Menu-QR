@@ -120,6 +120,14 @@ Abre `http://localhost:3000` (carta) y `http://localhost:3000/admin`
     carta. Cada plato tiene un botón **"Ocultar"** para sacarlo
     momentáneamente de la carta pública sin borrarlo — útil para platos
     de temporada o de una ocasión especial. "Mostrar" lo vuelve a activar.
+    Usa las flechas junto a cada categoría para subirla o bajarla y las de
+    cada plato para ordenar los platos dentro de su categoría. El orden se
+    guarda automáticamente y se aplica a las categorías, los platos y la
+    búsqueda de la carta pública. Los platos ocultos conservan su posición.
+    Para cambiar un plato de categoría, entra a **Editar** y cambia el campo
+    **Categoría**: se agrega al final del grupo de destino. Los platos nuevos
+    también se agregan al final. Si falla el guardado, el panel avisa y permite
+    intentarlo nuevamente.
   - **Promociones y eventos**: usa **Agregar publicación** para crear una
     oferta, evento o novedad con título, descripción e imagen opcional.
     Revisa la vista previa antes de guardar. El carrusel mantiene su tamaño
@@ -128,7 +136,8 @@ Abre `http://localhost:3000` (carta) y `http://localhost:3000/admin`
     JPG, PNG, WebP, AVIF y GIF de hasta 10 MB; las imágenes se suben al guardar.
     El carrusel aparece sobre los platos cuando hay publicaciones visibles.
     Las imágenes se integran con el fondo de la página, sin recuadro ni fondo
-    de tarjeta, con los bordes difuminados y el centro nítido.
+    de tarjeta, con los bordes más difuminados y el centro nítido. Se muestran
+    más grandes en escritorio y tienen más altura en celular para los afiches.
     Tiene indicadores, teclado y deslizamiento
     en celular. Avanza automáticamente cada 6,5 segundos, también después
     de elegir un indicador o deslizar. El gesto en curso, salir de pantalla o
@@ -165,4 +174,6 @@ lib/
   cloudinary.js           → subida de imágenes a Cloudinary
   format.js                → formato de precios (CLP) y orden de categorías
   promotions.js            → tipos de publicación y presentación de imágenes
+  menu-order.js            → orden de categorías y platos compartido con la carta
+  menu-order-store.js      → guardado atómico del orden en los platos existentes
 ```

@@ -16,7 +16,7 @@ export default function PromoCard({ promo, priority = false, preview = false }) 
       {hasImage ? (
         <div className="promo-card-media">
           <Image src={promo.imageUrl} alt={promo.title || `${type.label} del restaurante`}
-            fill priority={priority} sizes="(max-width: 640px) 100vw, 576px"
+            fill priority={priority} sizes="(max-width: 832px) 100vw, 800px"
             className="promo-card-image" draggable={false} onError={() => setFailed(true)}
             onLoad={(event) => {
               const image = event.currentTarget;
